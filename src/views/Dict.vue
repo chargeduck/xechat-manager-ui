@@ -15,8 +15,12 @@
             </div>
           </template>
 
-          <el-input v-model="typeKeyword" placeholder="搜索类型编码/名称" clearable class="search-input"
-            @input="handleTypeSearch" />
+          <div class="search-row">
+            <el-input v-model="typeDictType" placeholder="类型编码" clearable class="search-input"
+              @input="handleTypeSearch" />
+            <el-input v-model="typeDictName" placeholder="类型名称" clearable class="search-input"
+              @input="handleTypeSearch" />
+          </div>
 
           <el-table :data="typeList" v-loading="typeLoading" highlight-current-row stripe
             @row-click="handleTypeClick" :row-class-name="typeRowClass" max-height="calc(100vh - 320px)">
@@ -155,7 +159,8 @@ import {
 
 const typeLoading = ref(false)
 const typeList = ref([])
-const typeKeyword = ref('')
+const typeDictType = ref('')
+const typeDictName = ref('')
 const typePage = ref(1)
 const typePageSize = ref(10)
 const typeTotal = ref(0)
@@ -167,7 +172,8 @@ async function fetchTypeList() {
     const res = await pageDictTypes({
       page: typePage.value,
       pageSize: typePageSize.value,
-      keyword: typeKeyword.value || undefined
+      dictType: typeDictType.value || undefined,
+      dictName: typeDictName.value || undefined
     })
     typeList.value = res.data.records || []
     typeTotal.value = res.data.total || 0
