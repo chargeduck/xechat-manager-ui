@@ -3,11 +3,11 @@ import request from '@/utils/request'
 /**
  * 游戏列表（所有已上线的游戏）
  */
-export function getGameList(params) {
+export function getGameList(data) {
   return request({
     url: '/game-info/list',
-    method: 'get',
-    params
+    method: 'post',
+    data
   })
 }
 

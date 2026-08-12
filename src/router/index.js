@@ -42,6 +42,12 @@ const routes = [
         name: 'Deploy',
         component: () => import('@/views/Deploy.vue'),
         meta: { title: '部署管理', requiresAuth: true }
+      },
+      {
+        path: 'dict',
+        name: 'Dict',
+        component: () => import('@/views/Dict.vue'),
+        meta: { title: '字典管理', requiresAuth: true }
       }
     ]
   }

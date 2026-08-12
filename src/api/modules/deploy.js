@@ -1,24 +1,13 @@
 import request from '@/utils/request'
 
 /**
- * 部署历史列表（按 gameName 查询）
+ * 部署历史列表（按游戏名称查询）
  */
-export function getDeployHistoryList(params) {
+export function getDeployHistoryList(data) {
   return request({
     url: '/game-info/history',
-    method: 'get',
-    params
-  })
-}
-
-/**
- * 按游戏查询部署历史
- */
-export function getDeployHistoryByGame(gameName, params) {
-  return request({
-    url: '/game-info/history',
-    method: 'get',
-    params: { gameName, ...params }
+    method: 'post',
+    data
   })
 }
 
@@ -42,11 +31,11 @@ export function uploadDeploy(gameName, file) {
 /**
  * 下载指定版本的构建包
  */
-export function downloadDeploy(params) {
+export function downloadDeploy(data) {
   return request({
     url: '/game-info/download',
-    method: 'get',
-    params,
+    method: 'post',
+    data,
     responseType: 'blob'
   })
 }
@@ -54,10 +43,10 @@ export function downloadDeploy(params) {
 /**
  * 获取当前部署版本信息
  */
-export function getCurrentDeploy(gameName) {
+export function getCurrentDeploy(data) {
   return request({
     url: '/game-info/current',
-    method: 'get',
-    params: { gameName }
+    method: 'post',
+    data
   })
 }

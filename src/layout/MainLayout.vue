@@ -27,6 +27,10 @@
           <el-icon><Upload /></el-icon>
           <span>部署管理</span>
         </el-menu-item>
+        <el-menu-item index="/dict">
+          <el-icon><Collection /></el-icon>
+          <span>字典管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 

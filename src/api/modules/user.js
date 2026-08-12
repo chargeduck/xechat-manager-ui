@@ -3,11 +3,11 @@ import request from '@/utils/request'
 // 后端暂无用户管理 CRUD 接口，以下均为预留占位函数
 
 /**
- * 用户分页列表 (POST /sys/user/page)
+ * 用户分页列表 (POST /user/list)
  */
 export function getUserList(params) {
   return request({
-    url: '/user/page',
+    url: '/user/list',
     method: 'post',
     data: { page: { current: params.page, size: params.pageSize } }
   })
