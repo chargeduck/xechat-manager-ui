@@ -7,7 +7,7 @@ import request from '@/utils/request'
  */
 export function getUserList(params) {
   return request({
-    url: '/sys/user/page',
+    url: '/user/page',
     method: 'post',
     data: { page: { current: params.page, size: params.pageSize } }
   })
