@@ -13,6 +13,7 @@ export const useUserStore = defineStore('user', {
       const res = await login({ username, password })
       this.token = res.data.token
       localStorage.setItem('token', this.token)
+      debugger
       await this.fetchUserInfo()
       ElMessage.success('登录成功')
       return res

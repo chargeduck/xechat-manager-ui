@@ -5,7 +5,7 @@ import request from '@/utils/request'
  */
 export function login(data) {
   return request({
-    url: '/auth/login',
+    url: '/user/login',
     method: 'post',
     data
   })
@@ -16,7 +16,7 @@ export function login(data) {
  */
 export function register(data) {
   return request({
-    url: '/auth/register',
+    url: '/user/register',
     method: 'post',
     data
   })
@@ -27,17 +27,17 @@ export function register(data) {
  */
 export function getUserInfo() {
   return request({
-    url: '/auth/userinfo',
+    url: '/user/userInfo',
     method: 'get'
   })
 }
 
 /**
- * 刷新 Token
+ * 刷新 Token（后端暂无此接口，预留占位）
  */
 export function refreshToken() {
   return request({
-    url: '/auth/refresh',
+    url: '/user/refresh',
     method: 'post'
   })
 }

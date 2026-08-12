@@ -1,18 +1,20 @@
 import request from '@/utils/request'
 
+// 后端暂无用户管理 CRUD 接口，以下均为预留占位函数
+
 /**
- * 用户列表（分页）
+ * 用户分页列表 (POST /sys/user/page)
  */
 export function getUserList(params) {
   return request({
     url: '/sys/user/page',
-    method: 'get',
-    params
+    method: 'post',
+    data: { page: { current: params.page, size: params.pageSize } }
   })
 }
 
 /**
- * 用户详情
+ * 用户详情（后端暂无此接口，预留占位）
  */
 export function getUserDetail(id) {
   return request({
@@ -22,7 +24,7 @@ export function getUserDetail(id) {
 }
 
 /**
- * 新增用户
+ * 新增用户（后端暂无此接口，预留占位）
  */
 export function createUser(data) {
   return request({
@@ -33,7 +35,7 @@ export function createUser(data) {
 }
 
 /**
- * 更新用户
+ * 更新用户（后端暂无此接口，预留占位）
  */
 export function updateUser(id, data) {
   return request({
@@ -44,7 +46,7 @@ export function updateUser(id, data) {
 }
 
 /**
- * 删除用户
+ * 删除用户（后端暂无此接口，预留占位）
  */
 export function deleteUser(id) {
   return request({
@@ -54,7 +56,7 @@ export function deleteUser(id) {
 }
 
 /**
- * 修改用户状态
+ * 修改用户状态（后端暂无此接口，预留占位）
  */
 export function updateUserStatus(id, status) {
   return request({
