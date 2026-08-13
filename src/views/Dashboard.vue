@@ -59,12 +59,9 @@
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue'
-import { getGameList } from '@/api/modules/game'
-import { getUserList } from '@/api/modules/user'
-import { getDeployHistoryList } from '@/api/modules/deploy'
-
-const stats = reactive({
+import { ref, onMounted } from 'vue'
+import {getDashboardStats} from '@/api/dashboard.js'
+const stats = ref({
   gameCount: 0,
   userCount: 0,
   deployCount: 0,
@@ -72,21 +69,9 @@ const stats = reactive({
 })
 
 async function loadStats() {
-  try {
-    const [gameRes, userRes, deployRes] = await Promise.all([
-      getGameList({ pageSize: 1 }),
-      getUserList({ pageSize: 1 }),
-      getDeployHistoryList({ pageSize: 1 })
-    ])
-    stats.gameCount = gameRes.data?.total || 0
-    stats.userCount = userRes.data?.total || 0
-    stats.deployCount = deployRes.data?.total || 0
-    // 上架游戏：status=1
-    const onlineRes = await getGameList({ status: 1, pageSize: 1 })
-    stats.onlineGameCount = onlineRes.data?.total || 0
-  } catch {
-    // 后端未就绪时忽略
-  }
+  getDashboardStats().then(resp => {
+    stats.value = resp.data
+  })
 }
 
 onMounted(() => {

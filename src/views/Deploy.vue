@@ -76,7 +76,7 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getDeployHistoryList, getDeployDetail, deleteDeploy } from '@/api/modules/deploy'
+import { getDeployHistoryList, getDeployDetail, deleteDeploy } from '@/api/deploy'
 
 const loading = ref(false)
 const tableData = ref([])

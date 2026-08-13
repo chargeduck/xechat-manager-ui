@@ -4,10 +4,11 @@ import request from '@/utils/request'
  * 游戏列表（所有已上线的游戏）
  */
 export function getGameList(data) {
+  const { page, pageSize, ...rest } = data
   return request({
-    url: '/game-info/list',
+    url: '/gameInfo/list',
     method: 'post',
-    data
+    data: { ...rest, page: { current: page, size: pageSize } }
   })
 }
 
@@ -16,7 +17,7 @@ export function getGameList(data) {
  */
 export function getGameDetail(gameName) {
   return request({
-    url: `/game-info/${gameName}`,
+    url: `/gameInfo/${gameName}`,
     method: 'get'
   })
 }
@@ -28,7 +29,7 @@ export function getGameDetail(gameName) {
  */
 export function createGame(data) {
   return request({
-    url: '/game-info/create',
+    url: '/gameInfo/create',
     method: 'post',
     data
   })
@@ -39,7 +40,7 @@ export function createGame(data) {
  */
 export function updateGame(gameName, data) {
   return request({
-    url: `/game-info/${gameName}`,
+    url: `/gameInfo/${gameName}`,
     method: 'put',
     data
   })
@@ -50,7 +51,7 @@ export function updateGame(gameName, data) {
  */
 export function deleteGame(gameName) {
   return request({
-    url: `/game-info/${gameName}`,
+    url: `/gameInfo/${gameName}`,
     method: 'delete'
   })
 }
@@ -60,7 +61,7 @@ export function deleteGame(gameName) {
  */
 export function updateGameStatus(gameName, status) {
   return request({
-    url: `/game-info/${gameName}/status`,
+    url: `/gameInfo/${gameName}/status`,
     method: 'put',
     params: { status }
   })

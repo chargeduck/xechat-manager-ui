@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { login, register, getUserInfo } from '@/api/modules/auth'
+import { login, register, getUserInfo } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 
 export const useUserStore = defineStore('user', {

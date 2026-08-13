@@ -6,7 +6,7 @@
 
     <el-row :gutter="16" class="dict-container">
       <!-- 左侧：字典类型 -->
-      <el-col :span="8">
+      <el-col :span="12">
         <el-card shadow="never" class="dict-card">
           <template #header>
             <div class="card-header">
@@ -15,19 +15,23 @@
             </div>
           </template>
 
-          <div class="search-row">
-            <el-input v-model="typeDictType" placeholder="类型编码" clearable class="search-input"
-              @input="handleTypeSearch" />
-            <el-input v-model="typeDictName" placeholder="类型名称" clearable class="search-input"
-              @input="handleTypeSearch" />
-          </div>
+          <el-form inline class="search-form">
+            <el-form-item label="类型编码">
+              <el-input v-model="typeDictType" placeholder="请输入类型编码" clearable style="width: 150px"
+                @input="handleTypeSearch" />
+            </el-form-item>
+            <el-form-item label="类型名称">
+              <el-input v-model="typeDictName" placeholder="请输入类型名称" clearable style="width: 150px"
+                @input="handleTypeSearch" />
+            </el-form-item>
+          </el-form>
 
           <el-table :data="typeList" v-loading="typeLoading" highlight-current-row stripe
             @row-click="handleTypeClick" :row-class-name="typeRowClass" max-height="calc(100vh - 320px)">
-            <el-table-column prop="dictName" label="类型名称" min-width="100" show-overflow-tooltip />
-            <el-table-column prop="dictType" label="类型编码" min-width="100" show-overflow-tooltip />
-            <el-table-column prop="remark" label="备注" min-width="80" show-overflow-tooltip />
-            <el-table-column label="状态" width="60">
+            <el-table-column prop="dictName" label="类型名称"  show-overflow-tooltip />
+            <el-table-column prop="dictType" label="类型编码"  show-overflow-tooltip />
+            <el-table-column prop="remark" label="备注"  show-overflow-tooltip />
+            <el-table-column label="状态" >
               <template #default="{ row }">
                 <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
                   {{ row.status === 1 ? '启用' : '禁用' }}
@@ -51,7 +55,7 @@
       </el-col>
 
       <!-- 右侧：字典项 -->
-      <el-col :span="16">
+      <el-col :span="12">
         <el-card shadow="never" class="dict-card">
           <template #header>
             <div class="card-header">
@@ -69,19 +73,25 @@
             </div>
           </template>
 
+          <el-form v-if="currentType" inline class="search-form">
+            <el-form-item label="字典名称">
+              <el-input v-model="itemDictName" placeholder="请输入字典名称" clearable style="width: 180px"
+                @input="handleItemSearch" />
+            </el-form-item>
+          </el-form>
+
           <el-table v-if="currentType" :data="itemList" v-loading="itemLoading" stripe
             max-height="calc(100vh - 370px)">
-            <el-table-column prop="dictCode" label="字典编码" min-width="120" />
-            <el-table-column prop="dictValue" label="字典值" min-width="120" />
-            <el-table-column prop="sort" label="排序" width="80" />
-            <el-table-column label="状态" width="80">
+            <el-table-column prop="dictCode" label="字典编码" />
+            <el-table-column prop="dictValue" label="字典值"/>
+            <el-table-column prop="sort" label="排序"  />
+            <el-table-column label="状态" >
               <template #default="{ row }">
                 <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
                   {{ row.status === 1 ? '启用' : '禁用' }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="createTime" label="创建时间" width="170" />
             <el-table-column label="操作" width="120" fixed="right">
               <template #default="{ row }">
                 <el-button link type="primary" size="small" @click="handleEditItem(row)">编辑</el-button>
@@ -89,6 +99,12 @@
               </template>
             </el-table-column>
           </el-table>
+
+          <div v-if="currentType" class="pagination-wrap">
+            <el-pagination v-model:current-page="itemPage" v-model:page-size="itemPageSize"
+              :total="itemTotal" :page-sizes="[10, 20, 50]" layout="total, prev, pager, next" small
+              @change="fetchItemList(currentType.dictType)" />
+          </div>
 
           <el-empty v-else description="请在左侧选择字典类型" :image-size="80" />
         </el-card>
@@ -151,9 +167,9 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  pageDictTypes, createDictType, updateDictType, deleteDictType,
+  listDictTypes, createDictType, updateDictType, deleteDictType,
   getDictItemsByTypeId, createDictItem, updateDictItem, deleteDictItem
-} from '@/api/modules/dict'
+} from '@/api/dict'
 
 /* ==================== 类型列表 ==================== */
 
@@ -169,7 +185,7 @@ let typeSearchTimer = null
 async function fetchTypeList() {
   typeLoading.value = true
   try {
-    const res = await pageDictTypes({
+    const res = await listDictTypes({
       page: typePage.value,
       pageSize: typePageSize.value,
       dictType: typeDictType.value || undefined,
@@ -268,17 +284,35 @@ async function handleDeleteType(row) {
 const currentType = ref(null)
 const itemLoading = ref(false)
 const itemList = ref([])
+const itemDictName = ref('')
+const itemPage = ref(1)
+const itemPageSize = ref(10)
+const itemTotal = ref(0)
+let itemSearchTimer = null
 
 function handleTypeClick(row) {
   currentType.value = row
-  fetchItemList(row.id)
+  itemDictName.value = ''
+  itemPage.value = 1
+  fetchItemList(row.dictType)
 }
 
-async function fetchItemList(typeId) {
+function handleItemSearch() {
+  clearTimeout(itemSearchTimer)
+  itemSearchTimer = setTimeout(() => {
+    itemPage.value = 1
+    fetchItemList(currentType.value.dictType)
+  }, 300)
+}
+
+async function fetchItemList(dictType) {
   itemLoading.value = true
   try {
-    const res = await getDictItemsByTypeId(typeId)
-    itemList.value = res.data || []
+    const res = await getDictItemsByTypeId(
+      dictType, itemDictName.value || undefined, itemPage.value, itemPageSize.value
+    )
+    itemList.value = res.data.records || []
+    itemTotal.value = res.data.total || 0
   } finally {
     itemLoading.value = false
   }
@@ -309,7 +343,7 @@ const itemDialogTitle = computed(() => isItemEdit.value ? '编辑字典项' : '�
 
 function handleAddItem() {
   isItemEdit.value = false
-  Object.assign(itemForm, { id: null, dictTypeId: currentType.value.id, dictCode: '', dictValue: '', sort: 0, status: 1 })
+  Object.assign(itemForm, { id: null, dictTypeId: currentType.value.id, dictCode: '', dictValue: '', sort: itemTotal.value + 1, status: 1 })
   itemDialogVisible.value = true
 }
 
@@ -335,7 +369,7 @@ async function handleItemSubmit() {
       ElMessage.success('新增成功')
     }
     itemDialogVisible.value = false
-    fetchItemList(currentType.value.id)
+    fetchItemList(currentType.value.dictType)
   } finally {
     itemSubmitLoading.value = false
   }
@@ -346,7 +380,7 @@ async function handleDeleteItem(row) {
     await ElMessageBox.confirm(`确定删除字典项「${row.dictCode}」？`, '警告', { type: 'error' })
     await deleteDictItem(row.id)
     ElMessage.success('删除成功')
-    fetchItemList(currentType.value.id)
+    fetchItemList(currentType.value.dictType)
   } catch { /* 取消 */ }
 }
 
@@ -386,8 +420,12 @@ onMounted(() => {
   color: #c0c4cc;
   font-size: 13px;
 }
-.search-input {
+.search-form {
   margin-bottom: 12px;
+}
+.search-form :deep(.el-form-item) {
+  margin-right: 16px;
+  margin-bottom: 0;
 }
 .pagination-wrap {
   display: flex;

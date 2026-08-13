@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getGameList } from '@/api/modules/game'
+import { getGameList } from '@/api/game'
 
 export const useGameStore = defineStore('game', {
   state: () => ({

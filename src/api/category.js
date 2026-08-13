@@ -9,14 +9,19 @@ export function getCategoryTree() {
 
 /** 获取游戏分类列表（仅启用，扁平） */
 export function getCategoryList() {
-  return request({ url: '/category/list', method: 'post' })
+  return request({ url: '/category/enabled', method: 'post' })
 }
 
 /* ==================== 分类管理（admin） ==================== */
 
 /** 分页查询游戏分类 */
-export function pageCategory(data) {
-  return request({ url: '/category/page', method: 'post', data })
+export function listCategory(data) {
+  const { page, pageSize, ...rest } = data
+  return request({
+    url: '/category/list',
+    method: 'post',
+    data: { ...rest, page: { current: page, size: pageSize } }
+  })
 }
 
 /** 获取分类详情 */

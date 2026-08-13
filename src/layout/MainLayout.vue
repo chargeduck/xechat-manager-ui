@@ -6,7 +6,7 @@
       </div>
       <el-menu
         :default-active="activeMenu"
-        :default-openeds="['system']"
+        :default-openeds="['game', 'system']"
         router
         background-color="#304156"
         text-color="#bfcbd9"
@@ -16,23 +16,29 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>首页仪表盘</span>
         </el-menu-item>
-        <el-menu-item index="/game">
-          <el-icon><VideoGame /></el-icon>
-          <span>游戏管理</span>
-        </el-menu-item>
-        <el-menu-item index="/user">
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
-        <el-menu-item index="/deploy">
-          <el-icon><Upload /></el-icon>
-          <span>部署管理</span>
-        </el-menu-item>
+        <el-sub-menu index="game">
+          <template #title>
+            <el-icon><Monitor /></el-icon>
+            <span>游戏管理</span>
+          </template>
+          <el-menu-item index="/game">
+            <el-icon><Trophy /></el-icon>
+            <span>游戏管理</span>
+          </el-menu-item>
+          <el-menu-item index="/deploy">
+            <el-icon><Upload /></el-icon>
+            <span>部署管理</span>
+          </el-menu-item>
+        </el-sub-menu>
         <el-sub-menu index="system">
           <template #title>
             <el-icon><Setting /></el-icon>
             <span>系统管理</span>
           </template>
+          <el-menu-item index="/user">
+            <el-icon><User /></el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
           <el-menu-item index="/dict">
             <el-icon><Collection /></el-icon>
             <span>字典管理</span>

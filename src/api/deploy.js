@@ -4,10 +4,11 @@ import request from '@/utils/request'
  * 部署历史列表（按游戏名称查询）
  */
 export function getDeployHistoryList(data) {
+  const { page, pageSize, ...rest } = data
   return request({
-    url: '/deployHistory/history',
+    url: '/deployHistory/list',
     method: 'post',
-    data
+    data: { ...rest, page: { current: page, size: pageSize } }
   })
 }
 

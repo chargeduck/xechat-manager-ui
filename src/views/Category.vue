@@ -57,7 +57,7 @@
               @keyup.enter="handleSearch"
               @clear="handleSearch"
             />
-            <el-select v-model="query.status" placeholder="状态" clearable class="search-select" @change="handleSearch">
+            <el-select v-model="query.status" placeholder="状态" clearable filterable class="search-select" @change="handleSearch">
               <el-option label="启用" :value="1" />
               <el-option label="禁用" :value="0" />
             </el-select>
@@ -66,7 +66,7 @@
           </div>
 
           <el-table :data="list" v-loading="listLoading" border stripe max-height="520">
-            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column type="index" label="序号"  width="80"/>
             <el-table-column prop="name" label="分类名称" min-width="140" />
             <el-table-column prop="parentId" label="父分类ID" width="90" />
             <el-table-column prop="sort" label="排序" width="70" />
@@ -103,7 +103,7 @@
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="480px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
         <el-form-item label="父分类" prop="parentId">
-          <el-select v-model="form.parentId" placeholder="请选择父分类" clearable style="width: 100%">
+          <el-select v-model="form.parentId" placeholder="请选择父分类" filterable clearable style="width: 100%">
             <el-option label="顶级分类" :value="0" />
             <el-option
               v-for="c in categoryOptions"
@@ -141,11 +141,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getCategoryTree,
   getCategoryList,
-  pageCategory,
+  listCategory,
   createCategory,
   updateCategory,
   deleteCategory
-} from '@/api/modules/category'
+} from '@/api/category'
 
 const treeData = ref([])
 const treeLoading = ref(false)
@@ -199,7 +199,7 @@ async function fetchList() {
     const params = { page: query.page, pageSize: query.pageSize }
     if (query.name) params.name = query.name
     if (query.status !== '') params.status = query.status
-    const res = await pageCategory(params)
+    const res = await listCategory(params)
     list.value = res.data.records || res.data.list || []
     total.value = res.data.total || 0
   } finally {

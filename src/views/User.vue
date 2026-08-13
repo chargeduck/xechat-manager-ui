@@ -15,7 +15,7 @@
           <el-input v-model="searchForm.nickname" placeholder="请输入昵称" clearable />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择" clearable>
+          <el-select v-model="searchForm.status" placeholder="请选择" filterable clearable>
             <el-option label="全部" value="" />
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
@@ -89,7 +89,7 @@
           <el-input v-model="form.phone" placeholder="请输入手机号" />
         </el-form-item>
         <el-form-item label="角色" prop="role">
-          <el-select v-model="form.role">
+          <el-select v-model="form.role" filterable>
             <el-option label="普通用户" value="user" />
             <el-option label="管理员" value="admin" />
           </el-select>
@@ -112,7 +112,7 @@
 <script setup>
 import { reactive, ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserList, createUser, updateUser, deleteUser, updateUserStatus } from '@/api/modules/user'
+import { getUserList, createUser, updateUser, deleteUser, updateUserStatus } from '@/api/user'
 
 const loading = ref(false)
 const tableData = ref([])

@@ -12,12 +12,12 @@
           <el-input v-model="searchForm.gameName" placeholder="请输入游戏名称" clearable />
         </el-form-item>
         <el-form-item label="游戏类型">
-          <el-select v-model="searchForm.gameType" placeholder="请选择" clearable>
+          <el-select v-model="searchForm.gameType" filterable placeholder="请选择" clearable>
             <el-option label="全部" value="" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择" clearable>
+          <el-select v-model="searchForm.status" placeholder="请选择" filterable clearable>
             <el-option label="全部" value="" />
             <el-option label="上架" :value="1" />
             <el-option label="下架" :value="0" />
@@ -158,8 +158,8 @@
 <script setup>
 import { reactive, ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getGameList, createGame, updateGame, deleteGame, updateGameStatus } from '@/api/modules/game'
-import { getDeployHistoryList } from '@/api/modules/deploy'
+import { getGameList, createGame, updateGame, deleteGame, updateGameStatus } from '@/api/game'
+import { getDeployHistoryList } from '@/api/deploy'
 
 const loading = ref(false)
 const tableData = ref([])

@@ -28,7 +28,7 @@ export function getUserDetail(id) {
  */
 export function createUser(data) {
   return request({
-    url: '/sys/user',
+    url: '/user/register',
     method: 'post',
     data
   })

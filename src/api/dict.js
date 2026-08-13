@@ -7,16 +7,16 @@ export function getDictTypes() {
   return request({ url: '/dict/types', method: 'post' })
 }
 
-/** 根据类型编码获取已启用的字典项 */
-export function getDictItems(dictType) {
-  return request({ url: '/dict/items', method: 'post', data: { dictType } })
-}
-
 /* ==================== 字典类型管理（admin） ==================== */
 
 /** 分页查询字典类型 */
-export function pageDictTypes(data) {
-  return request({ url: '/dict/types/list', method: 'post', data })
+export function listDictTypes(data) {
+  const { page, pageSize, ...rest } = data
+  return request({
+    url: '/dict/types/list',
+    method: 'post',
+    data: { ...rest, page: { current: page, size: pageSize } }
+  })
 }
 
 /** 新增字典类型 */
@@ -36,9 +36,13 @@ export function deleteDictType(id) {
 
 /* ==================== 字典项管理（admin） ==================== */
 
-/** 获取某类型下的全部字典项（含禁用） */
-export function getDictItemsByTypeId(typeId) {
-  return request({ url: '/dict/items/type', method: 'post', data: { dictType: String(typeId) } })
+/** 分页获取某类型下的字典项（含禁用），可按条目值（dictValue）过滤 */
+export function getDictItemsByTypeId(dictType, dictName, page, pageSize) {
+  return request({
+    url: '/dict/items/type',
+    method: 'post',
+    data: { dictType, dictName, page: { current: page, size: pageSize } }
+  })
 }
 
 /** 新增字典项 */
