@@ -48,6 +48,12 @@ const routes = [
         name: 'Dict',
         component: () => import('@/views/Dict.vue'),
         meta: { title: '字典管理', requiresAuth: true }
+      },
+      {
+        path: 'category',
+        name: 'Category',
+        component: () => import('@/views/Category.vue'),
+        meta: { title: '游戏分类管理', requiresAuth: true }
       }
     ]
   }

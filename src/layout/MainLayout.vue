@@ -6,6 +6,7 @@
       </div>
       <el-menu
         :default-active="activeMenu"
+        :default-openeds="['system']"
         router
         background-color="#304156"
         text-color="#bfcbd9"
@@ -27,10 +28,20 @@
           <el-icon><Upload /></el-icon>
           <span>部署管理</span>
         </el-menu-item>
-        <el-menu-item index="/dict">
-          <el-icon><Collection /></el-icon>
-          <span>字典管理</span>
-        </el-menu-item>
+        <el-sub-menu index="system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/dict">
+            <el-icon><Collection /></el-icon>
+            <span>字典管理</span>
+          </el-menu-item>
+          <el-menu-item index="/category">
+            <el-icon><Menu /></el-icon>
+            <span>游戏分类管理</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 

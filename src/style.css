@@ -289,3 +289,8 @@ code {
     border-right-color: var(--border);
   }
 }
+
+/* 统一 inline 表单中的 el-select 下拉宽度 */
+.el-form--inline .el-select {
+  width: 160px;
+}

@@ -5,7 +5,7 @@ import request from '@/utils/request'
  */
 export function getDeployHistoryList(data) {
   return request({
-    url: '/game-info/history',
+    url: '/deployHistory/history',
     method: 'post',
     data
   })
@@ -21,7 +21,7 @@ export function uploadDeploy(gameName, file) {
   formData.append('gameName', gameName)
   formData.append('file', file)
   return request({
-    url: '/game-info/upload',
+    url: '/deployHistory/upload',
     method: 'post',
     data: formData,
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -33,7 +33,7 @@ export function uploadDeploy(gameName, file) {
  */
 export function downloadDeploy(data) {
   return request({
-    url: '/game-info/download',
+    url: '/deployHistory/download',
     method: 'post',
     data,
     responseType: 'blob'
@@ -45,7 +45,7 @@ export function downloadDeploy(data) {
  */
 export function getCurrentDeploy(data) {
   return request({
-    url: '/game-info/current',
+    url: '/deployHistory/current',
     method: 'post',
     data
   })
