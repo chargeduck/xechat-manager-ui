@@ -22,10 +22,19 @@ export function getGameDetail(gameName) {
   })
 }
 
-// 以下为前端管理界面预留函数，后端暂无对应 CRUD 接口
+/**
+ * 生成并回显新版本号（level: major=大版本更新 / minor=新增功能 / patch=Bug修复）
+ */
+export function getNextVersion(gameId, level) {
+  return request({
+    url: '/gameInfo/version/next',
+    method: 'post',
+    data: { gameId, level }
+  })
+}
 
 /**
- * 新增游戏（后端暂无此接口，预留占位）
+ * 新增游戏（后端校验 gameName 唯一，重复返回"游戏名重复"）
  */
 export function createGame(data) {
   return request({
@@ -36,11 +45,11 @@ export function createGame(data) {
 }
 
 /**
- * 更新游戏（后端暂无此接口，预留占位）
+ * 更新游戏（body 含 gameName，由后端 GameInfoUpdateDTO 接收）
  */
-export function updateGame(gameName, data) {
+export function updateGame(data) {
   return request({
-    url: `/gameInfo/${gameName}`,
+    url: '/gameInfo/update',
     method: 'put',
     data
   })
@@ -57,12 +66,12 @@ export function deleteGame(gameName) {
 }
 
 /**
- * 修改游戏状态（后端暂无此接口，预留占位）
+ * 修改游戏状态（body 含 gameName/status，由后端 GameStatusDTO 接收）
  */
 export function updateGameStatus(gameName, status) {
   return request({
-    url: `/gameInfo/${gameName}/status`,
+    url: '/gameInfo/status',
     method: 'put',
-    params: { status }
+    data: { gameName, status }
   })
 }

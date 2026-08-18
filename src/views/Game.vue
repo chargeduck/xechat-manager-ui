@@ -13,12 +13,16 @@
         </el-form-item>
         <el-form-item label="游戏类型">
           <el-select v-model="searchForm.gameType" filterable placeholder="请选择" clearable>
-            <el-option label="全部" value="" />
+            <el-option
+              v-for="cat in categoryOptions"
+              :key="cat.id"
+              :label="cat.name"
+              :value="cat.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="searchForm.status" placeholder="请选择" filterable clearable>
-            <el-option label="全部" value="" />
             <el-option label="上架" :value="1" />
             <el-option label="下架" :value="0" />
             <el-option label="维护" :value="2" />
@@ -36,9 +40,21 @@
       <el-table :data="tableData" v-loading="loading" border stripe>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="gameName" label="游戏名称" min-width="150" />
-        <el-table-column prop="gameNameEn" label="英文名" min-width="120" />
+        <el-table-column prop="gameNameZhCN" label="中文名" min-width="120" />
         <el-table-column prop="version" label="当前版本" width="100" />
-        <el-table-column prop="gameType" label="游戏类型" width="100" />
+        <el-table-column label="游戏类型" min-width="140">
+          <template #default="{ row }">
+            <template v-if="row.categoryNames && row.categoryNames.length">
+              <el-tag
+                v-for="name in row.categoryNames"
+                :key="name"
+                size="small"
+                class="category-tag"
+              >{{ name }}</el-tag>
+            </template>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="statusTag(row.status)">{{ statusText(row.status) }}</el-tag>
@@ -83,8 +99,18 @@
           <el-tab-pane label="基本信息" name="info">
             <el-descriptions :column="1" border>
               <el-descriptions-item label="游戏名称">{{ detailData.gameName }}</el-descriptions-item>
-              <el-descriptions-item label="英文名">{{ detailData.gameNameEn || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="游戏类型">{{ detailData.gameType || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="中文名">{{ detailData.gameNameZhCN || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="游戏类型">
+                <template v-if="detailData.categoryNames && detailData.categoryNames.length">
+                  <el-tag
+                    v-for="name in detailData.categoryNames"
+                    :key="name"
+                    size="small"
+                    class="category-tag"
+                  >{{ name }}</el-tag>
+                </template>
+                <span v-else>-</span>
+              </el-descriptions-item>
               <el-descriptions-item label="版本号">{{ detailData.version || '-' }}</el-descriptions-item>
               <el-descriptions-item label="状态">
                 <el-tag :type="statusTag(detailData.status)">{{ statusText(detailData.status) }}</el-tag>
@@ -93,12 +119,11 @@
               <el-descriptions-item label="图标URL">{{ detailData.icon || '-' }}</el-descriptions-item>
               <el-descriptions-item label="简介">{{ detailData.description || '-' }}</el-descriptions-item>
               <el-descriptions-item label="下载地址">{{ detailData.downloadUrl || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="最近部署">{{ detailData.deployTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间">{{ detailData.createTime || '-' }}</el-descriptions-item>
             </el-descriptions>
           </el-tab-pane>
           <el-tab-pane label="部署历史" name="history">
             <el-table :data="historyList" v-loading="historyLoading" stripe max-height="400">
+              <el-table-column prop="version" label="版本号" width="100" />
               <el-table-column prop="versionTime" label="版本时间" width="160" />
               <el-table-column prop="deployTime" label="部署时间" width="170" />
               <el-table-column label="包大小" width="100">
@@ -118,16 +143,36 @@
       <template v-if="drawerMode === 'edit' || drawerMode === 'create'">
         <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
           <el-form-item label="游戏名称" prop="gameName">
-            <el-input v-model="form.gameName" placeholder="请输入游戏名称（唯一标识，同时为服务器目录名）" />
+            <el-input
+              v-model="form.gameName"
+              :disabled="drawerMode === 'edit'"
+              placeholder="请输入游戏名称（唯一标识，同时为服务器目录名）"
+            />
           </el-form-item>
-          <el-form-item label="英文名" prop="gameNameEn">
-            <el-input v-model="form.gameNameEn" placeholder="请输入英文名" />
+          <el-form-item label="中文名" prop="gameNameZhCN">
+            <el-input v-model="form.gameNameZhCN" placeholder="请输入中文名" />
           </el-form-item>
-          <el-form-item label="游戏类型" prop="gameType">
-            <el-input v-model="form.gameType" placeholder="请输入游戏类型" />
+          <el-form-item label="游戏类型" prop="categoryIds">
+            <el-cascader
+              v-model="form.categoryIds"
+              :options="categoryTreeOptions"
+              :props="{ multiple: true, emitPath: false, checkStrictly: true }"
+              filterable
+              clearable
+              placeholder="请选择游戏类型（可多选）"
+              style="width: 100%"
+            />
           </el-form-item>
-          <el-form-item label="版本号" prop="version">
-            <el-input v-model="form.version" placeholder="请输入版本号" />
+          <el-form-item label="版本更新" prop="versionLevel">
+            <el-radio-group v-model="form.versionLevel" @change="handleVersionChange">
+              <el-radio-button value="major">大版本更新</el-radio-button>
+              <el-radio-button value="minor">新增功能</el-radio-button>
+              <el-radio-button value="patch">BUG修复</el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="新版本号" prop="version">
+            <el-input v-model="form.version" placeholder="选择更新维度后自动生成" disabled />
+            <div class="version-tip">新版本号由系统根据当前版本自动生成，不可手动修改</div>
           </el-form-item>
           <el-form-item label="图标URL" prop="icon">
             <el-input v-model="form.icon" placeholder="请输入图标URL" />
@@ -158,13 +203,27 @@
 <script setup>
 import { reactive, ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getGameList, createGame, updateGame, deleteGame, updateGameStatus } from '@/api/game'
+import { getGameList, getNextVersion, createGame, updateGame, deleteGame, updateGameStatus } from '@/api/game'
 import { getDeployHistoryList } from '@/api/deploy'
+import { getCategoryList, getCategoryTree } from '@/api/category'
 
 const loading = ref(false)
 const tableData = ref([])
 const submitLoading = ref(false)
 const formRef = ref(null)
+
+const categoryOptions = ref([])
+/** 分类树（级联选择器 options）：value=id, label=name, children */
+const categoryTreeOptions = ref([])
+
+/** 将后端分类树（{id,parentId,name,children}）递归转换为 el-cascader options */
+function buildCascaderOptions(list) {
+  return (list || []).map(node => ({
+    value: node.id,
+    label: node.name,
+    children: node.children && node.children.length ? buildCascaderOptions(node.children) : undefined
+  }))
+}
 
 const searchForm = reactive({
   gameName: '',
@@ -216,11 +275,14 @@ async function handleDetail(row) {
 
 /* ==================== 编辑 / 新增模式 ==================== */
 
-const form = reactive({
+const editGameId = ref(null)
+
+const form = ref({
   gameName: '',
-  gameNameEn: '',
+  gameNameZhCN: '',
   version: '',
-  gameType: '',
+  versionLevel: '',
+  categoryIds: [],
   icon: '',
   status: 1,
   description: '',
@@ -231,28 +293,58 @@ const formRules = {
   gameName: [{ required: true, message: '请输入游戏名称', trigger: 'blur' }]
 }
 
+function resetForm() {
+  form.value = {
+    gameName: '',
+    gameNameZhCN: '',
+    version: '',
+    versionLevel: '',
+    categoryIds: [],
+    icon: '',
+    status: 1,
+    description: '',
+    downloadUrl: ''
+  }
+}
+
 function handleAdd() {
   drawerMode.value = 'create'
-  Object.assign(form, {
-    gameName: '', gameNameEn: '', version: '', gameType: '',
-    icon: '', status: 1, description: '', downloadUrl: ''
-  })
+  editGameId.value = null
+  resetForm()
+  // 新增游戏只能从大版本开始：默认选中并回显 1.0.0
+  form.value.versionLevel = 'major'
+  handleVersionChange('major')
   drawerVisible.value = true
 }
 
 function handleEdit(row) {
   drawerMode.value = 'edit'
-  Object.assign(form, {
+  editGameId.value = row.id
+  form.value = {
     gameName: row.gameName || '',
-    gameNameEn: row.gameNameEn || '',
+    gameNameZhCN: row.gameNameZhCN || '',
     version: row.version || '',
-    gameType: row.gameType || '',
+    versionLevel: '',
+    categoryIds: row.categoryIds || [],
     icon: row.icon || '',
     status: row.status ?? 1,
     description: row.description || '',
     downloadUrl: row.downloadUrl || ''
-  })
+  }
   drawerVisible.value = true
+}
+
+/**
+ * 用户选择更新维度后，调用后端生成并回显新版本号（只读不可修改）
+ */
+async function handleVersionChange(level) {
+  if (!level) return
+  try {
+    const res = await getNextVersion(editGameId.value, level)
+    form.value.version = res.data || ''
+  } catch {
+    form.value.versionLevel = ''
+  }
 }
 
 async function handleSubmit() {
@@ -260,15 +352,18 @@ async function handleSubmit() {
   if (!valid) return
   submitLoading.value = true
   try {
+    const payload = { ...form.value }
     if (drawerMode.value === 'edit') {
-      await updateGame(form.gameName, { ...form })
+      await updateGame(payload)
       ElMessage.success('编辑成功')
     } else {
-      await createGame({ ...form })
+      await createGame(payload)
       ElMessage.success('新增成功')
     }
     drawerVisible.value = false
     fetchData()
+  } catch (e) {
+    // 后端返回的提示（如"游戏名重复"）已由拦截器弹出，这里不重复提示
   } finally {
     submitLoading.value = false
   }
@@ -299,7 +394,7 @@ async function fetchData() {
       pageSize: pagination.pageSize
     }
     if (searchForm.gameName) params.gameName = searchForm.gameName
-    if (searchForm.gameType) params.gameType = searchForm.gameType
+    if (searchForm.categoryId !== '') params.categoryId = searchForm.categoryId
     if (searchForm.status !== '') params.status = searchForm.status
     const res = await getGameList(params)
     tableData.value = res.data.records || res.data.list || []
@@ -327,7 +422,7 @@ async function handleStatus(row) {
   const text = newStatus === 1 ? '上架' : '下架'
   try {
     await ElMessageBox.confirm(`确定${text}该游戏？`, '提示', { type: 'warning' })
-    await updateGameStatus(row.id, newStatus)
+    await updateGameStatus(row.gameName, newStatus)
     ElMessage.success(`${text}成功`)
     fetchData()
   } catch { /* 取消 */ }
@@ -336,14 +431,26 @@ async function handleStatus(row) {
 async function handleDelete(row) {
   try {
     await ElMessageBox.confirm(`确定删除游戏「${row.gameName}」？`, '警告', { type: 'error' })
-    await deleteGame(row.id)
+    await deleteGame(row.gameName)
     ElMessage.success('删除成功')
     fetchData()
   } catch { /* 取消 */ }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchData()
+  try {
+    const res = await getCategoryList()
+    categoryOptions.value = res.data || []
+  } catch {
+    categoryOptions.value = []
+  }
+  try {
+    const res = await getCategoryTree()
+    categoryTreeOptions.value = buildCascaderOptions(res.data)
+  } catch {
+    categoryTreeOptions.value = []
+  }
 })
 </script>
 
@@ -376,5 +483,14 @@ onMounted(() => {
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid #ebeef5;
+}
+.category-tag {
+  margin-right: 6px;
+}
+.version-tip {
+  width: 100%;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
 }
 </style>

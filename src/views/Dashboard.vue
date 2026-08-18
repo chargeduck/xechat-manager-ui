@@ -99,7 +99,7 @@ onMounted(() => {
   font-size: 28px;
   font-weight: 700;
   margin: 0;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 .stat-label {
   font-size: 14px;

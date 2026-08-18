@@ -69,7 +69,7 @@ async function handleLogin() {
 .login-title {
   text-align: center;
   margin-bottom: 30px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 .login-btn {
   width: 100%;

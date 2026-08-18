@@ -104,7 +104,7 @@ async function handleRegister() {
 .register-title {
   text-align: center;
   margin-bottom: 30px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 .register-btn {
   width: 100%;

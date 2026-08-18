@@ -54,6 +54,12 @@
     <el-container>
       <el-header class="header">
         <div class="header-right">
+          <el-tooltip :content="isDark ? '切换为亮色模式' : '切换为暗色模式'" placement="bottom">
+            <el-icon class="theme-toggle" @click="toggleDark">
+              <Moon v-if="isDark" />
+              <Sunny v-else />
+            </el-icon>
+          </el-tooltip>
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-avatar :size="32" icon="UserFilled" />
@@ -78,9 +84,14 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useDark } from '@vueuse/core'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
+const isDark = useDark()
+const toggleDark = () => {
+  isDark.value = !isDark.value
+}
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -115,16 +126,22 @@ function handleCommand(command) {
   white-space: nowrap;
 }
 .header {
-  background: #fff;
+  background: var(--el-bg-color);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid var(--el-border-color-light);
   padding: 0 20px;
 }
 .header-right {
   display: flex;
   align-items: center;
+}
+.theme-toggle {
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--el-text-color-primary);
+  margin-right: 16px;
 }
 .user-info {
   display: flex;
@@ -134,10 +151,10 @@ function handleCommand(command) {
 }
 .username {
   font-size: 14px;
-  color: #333;
+  color: var(--el-text-color-primary);
 }
 .main-content {
-  background: #f0f2f5;
+  background: var(--el-bg-color-page);
   padding: 20px;
   overflow-y: auto;
 }

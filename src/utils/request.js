@@ -40,7 +40,7 @@ service.interceptors.response.use(
         ElMessage.error('登录已过期，请重新登录')
         window.location.href = '/login'
       } else {
-        ElMessage.error(error.response.data?.msg || '网络错误')
+        ElMessage.error(error.response.data?.message || error.response.data?.msg || '网络错误')
       }
     } else {
       ElMessage.error('网络连接异常')

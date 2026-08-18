@@ -2,6 +2,7 @@
   <div class="deploy-page">
     <div class="page-header">
       <h2 class="page-title">部署管理</h2>
+      <el-button type="primary" @click="handleUploadOpen">上传部署</el-button>
     </div>
 
     <!-- 搜索栏 -->
@@ -25,6 +26,7 @@
       <el-table :data="tableData" v-loading="loading" border stripe>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="gameInfoId" label="游戏ID" width="100" />
+        <el-table-column prop="version" label="版本号" width="100" />
         <el-table-column prop="versionTime" label="版本时间戳" width="180" />
         <el-table-column prop="deployTime" label="部署时间" width="170" />
         <el-table-column label="文件大小" width="100">
@@ -54,12 +56,81 @@
       </div>
     </el-card>
 
+    <!-- 上传部署对话框 -->
+    <el-dialog v-model="uploadVisible" title="上传部署" width="560px" destroy-on-close>
+      <el-form :model="uploadForm" label-width="110px">
+        <el-form-item label="选择游戏" required>
+          <el-select
+            v-model="uploadForm.gameName"
+            filterable
+            allow-create
+            placeholder="选择已有游戏，或输入新游戏名直接部署"
+            style="width: 100%"
+            @change="handleGameChange"
+          >
+            <el-option
+              v-for="game in gameOptions"
+              :key="game.gameName"
+              :label="`${game.gameName}（${game.gameNameZhCN || game.gameNameZhCn || '-'}）当前 v${game.version || '-'}`"
+              :value="game.gameName"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="中文名">
+          <el-input v-model="uploadForm.gameNameZhCn" placeholder="游戏中文名（新游戏部署时必填，用于自动创建）" />
+        </el-form-item>
+        <el-form-item label="图标地址">
+          <el-input v-model="uploadForm.icon" placeholder="游戏图标 URL（可选）" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="uploadForm.description" type="textarea" :rows="2" placeholder="游戏描述（可选）" />
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="uploadForm.categoryIds" multiple filterable placeholder="选择游戏分类" style="width: 100%">
+            <el-option v-for="c in categoryOptions" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="版本更新" required>
+          <el-radio-group v-model="uploadForm.versionLevel" @change="handleVersionChange">
+            <el-radio-button value="major">大版本更新</el-radio-button>
+            <el-radio-button value="minor">新增功能</el-radio-button>
+            <el-radio-button value="patch">BUG修复</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="新版本号" required>
+          <el-input v-model="uploadForm.version" placeholder="选择版本更新后自动生成" disabled />
+        </el-form-item>
+        <el-form-item label="构建包" required>
+          <el-upload
+            :auto-upload="false"
+            :limit="1"
+            accept=".tar.gz"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            drag
+            style="width: 100%"
+          >
+            <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+            <div class="el-upload__text">将 dist.tar.gz 拖到此处，或<em>点击上传</em></div>
+            <template #tip>
+              <div class="el-upload__tip">仅支持 .tar.gz 格式的构建包</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="uploadVisible = false">取消</el-button>
+        <el-button type="primary" :loading="uploading" @click="handleUploadSubmit">开始部署</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 详情弹窗 -->
     <el-dialog v-model="detailVisible" title="部署详情" width="560px">
       <el-descriptions :column="2" border v-if="detailData">
         <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item>
         <el-descriptions-item label="游戏ID">{{ detailData.gameInfoId }}</el-descriptions-item>
-        <el-descriptions-item label="版本时间戳" :span="2">{{ detailData.versionTime }}</el-descriptions-item>
+        <el-descriptions-item label="版本号">{{ detailData.version || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="版本时间戳">{{ detailData.versionTime }}</el-descriptions-item>
         <el-descriptions-item label="部署时间" :span="2">{{ detailData.deployTime }}</el-descriptions-item>
         <el-descriptions-item label="文件大小">{{ formatSize(detailData.fileSize) }}</el-descriptions-item>
         <el-descriptions-item label="上传者ID">{{ detailData.uploadUserId || '-' }}</el-descriptions-item>
@@ -76,7 +147,10 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getDeployHistoryList, getDeployDetail, deleteDeploy } from '@/api/deploy'
+import { UploadFilled } from '@element-plus/icons-vue'
+import { getDeployHistoryList, uploadDeploy, getDeployDetail, deleteDeploy } from '@/api/deploy'
+import { getGameList, getNextVersion } from '@/api/game'
+import { getCategoryList } from '@/api/category'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -93,6 +167,132 @@ const pagination = reactive({
   pageSize: 10,
   total: 0
 })
+
+/* ==================== 上传部署 ==================== */
+
+const uploadVisible = ref(false)
+const uploading = ref(false)
+const gameOptions = ref([])
+const categoryOptions = ref([])
+const selectedFile = ref(null)
+const gameIdMap = reactive({})
+
+const uploadForm = reactive({
+  gameName: '',
+  gameId: '',
+  gameNameZhCn: '',
+  icon: '',
+  description: '',
+  categoryIds: [],
+  versionLevel: '',
+  version: ''
+})
+
+async function handleUploadOpen() {
+  uploadVisible.value = true
+  uploadForm.gameName = ''
+  uploadForm.gameId = ''
+  uploadForm.gameNameZhCn = ''
+  uploadForm.icon = ''
+  uploadForm.description = ''
+  uploadForm.categoryIds = []
+  uploadForm.versionLevel = ''
+  uploadForm.version = ''
+  selectedFile.value = null
+  if (!gameOptions.value.length) {
+    try {
+      const res = await getGameList({ page: 1, pageSize: 100 })
+      const list = res.data.records || res.data.list || []
+      gameOptions.value = list
+      list.forEach(item => {
+        gameIdMap[item.gameName] = item.id
+      })
+    } catch {
+      gameOptions.value = []
+    }
+  }
+  if (!categoryOptions.value.length) {
+    try {
+      const res = await getCategoryList()
+      categoryOptions.value = res.data || []
+    } catch {
+      categoryOptions.value = []
+    }
+  }
+}
+
+function handleGameChange(gameName) {
+  const game = gameOptions.value.find(g => g.gameName === gameName)
+  uploadForm.gameId = game ? game.id : ''
+  uploadForm.versionLevel = ''
+  uploadForm.version = ''
+  uploadForm.gameNameZhCn = game ? (game.gameNameZhCN || game.gameNameZhCn || '') : ''
+  uploadForm.icon = game ? (game.icon || '') : ''
+  uploadForm.description = game ? (game.description || '') : ''
+  uploadForm.categoryIds = game && game.categoryIds ? [...game.categoryIds] : []
+}
+
+async function handleVersionChange(level) {
+  if (!level) {
+    return
+  }
+  try {
+    const res = await getNextVersion(uploadForm.gameId || null, level)
+    uploadForm.version = res.data || ''
+  } catch {
+    uploadForm.versionLevel = ''
+  }
+}
+
+function handleFileChange(file) {
+  const fileName = (file.name || '').toLowerCase()
+  if (!fileName.endsWith('.tar.gz')) {
+    ElMessage.error('仅支持 .tar.gz 格式的构建包')
+    selectedFile.value = null
+    return
+  }
+  selectedFile.value = file.raw
+}
+
+function handleFileRemove() {
+  selectedFile.value = null
+}
+
+async function handleUploadSubmit() {
+  if (!uploadForm.gameName) {
+    ElMessage.warning('请选择游戏')
+    return
+  }
+  if (!uploadForm.version) {
+    ElMessage.warning('请选择版本更新维度以生成版本号')
+    return
+  }
+  if (!selectedFile.value) {
+    ElMessage.warning('请选择 .tar.gz 构建包')
+    return
+  }
+  uploading.value = true
+  try {
+    await uploadDeploy({
+      gameName: uploadForm.gameName,
+      gameNameZhCn: uploadForm.gameNameZhCn,
+      icon: uploadForm.icon,
+      description: uploadForm.description,
+      version: uploadForm.version,
+      categoryIds: uploadForm.categoryIds,
+      file: selectedFile.value
+    })
+    ElMessage.success('部署成功')
+    uploadVisible.value = false
+    fetchData()
+  } catch {
+    // 后端提示已由拦截器弹出
+  } finally {
+    uploading.value = false
+  }
+}
+
+/* ==================== 列表与详情 ==================== */
 
 function formatSize(bytes) {
   if (!bytes) return '-'

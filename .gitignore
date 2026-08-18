@@ -113,3 +113,5 @@ docs/_book
 test/
 
 /.vscode/
+*.gz
+*.tar.gz
