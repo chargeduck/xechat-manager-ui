@@ -32,6 +32,12 @@ const routes = [
         meta: { title: '游戏管理', requiresAuth: true }
       },
       {
+        path: 'gameHall',
+        name: 'GameHall',
+        component: () => import('@/views/GameHall.vue'),
+        meta: { title: '游戏大厅', requiresAuth: true }
+      },
+      {
         path: 'user',
         name: 'User',
         component: () => import('@/views/User.vue'),

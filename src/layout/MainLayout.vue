@@ -25,6 +25,10 @@
             <el-icon><Trophy /></el-icon>
             <span>游戏管理</span>
           </el-menu-item>
+          <el-menu-item index="/gameHall">
+            <el-icon><VideoPlay /></el-icon>
+            <span>游戏大厅</span>
+          </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="system">
           <template #title>
