@@ -13,11 +13,11 @@ export function getGameList(data) {
 }
 
 /**
- * 游戏详情（按 gameName）
+ * 游戏详情（按 id，后端关联 SysFile 返回文件信息）
  */
-export function getGameDetail(gameName) {
+export function getGameDetail(id) {
   return request({
-    url: `/gameInfo/${gameName}`,
+    url: `/gameInfo/detail/${id}`,
     method: 'get'
   })
 }
@@ -51,6 +51,17 @@ export function updateGame(data) {
   return request({
     url: '/gameInfo/update',
     method: 'put',
+    data
+  })
+}
+
+/**
+ * 游戏更新部署（复用已上传 fileId 部署包，不重新上传；由后端 DeployUploadDTO 接收）
+ */
+export function deployGame(data) {
+  return request({
+    url: '/gameInfo/deploy',
+    method: 'post',
     data
   })
 }

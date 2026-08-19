@@ -38,9 +38,17 @@
     <!-- 表格 -->
     <el-card class="table-card">
       <el-table :data="tableData" v-loading="loading" border stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="gameName" label="游戏名称" min-width="150" />
-        <el-table-column prop="gameNameZhCN" label="中文名" min-width="120" />
+        <el-table-column type="index" label="序号" width="80" />
+        <el-table-column prop="gameName" label="游戏名称" min-width="120" >
+          <template #default="{ row }">
+            <el-link v-if="row.playUrl" type="primary" :href="row.playUrl" target="_blank">{{ row.gameName }}</el-link>
+          </template>
+        </el-table-column>
+        <el-table-column prop="gameNameZhCn" label="中文名" min-width="120" >
+          <template #default="{ row }">
+            <el-link v-if="row.playUrl" type="primary" :href="row.playUrl" target="_blank">{{ row.gameNameZhCn }}</el-link>
+          </template>
+        </el-table-column>
         <el-table-column prop="version" label="当前版本" width="100" />
         <el-table-column label="游戏类型" min-width="140">
           <template #default="{ row }">
@@ -66,15 +74,25 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="deployTime" label="最近部署" width="170" />
-        <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column prop="deployTime" label="最近部署" width="200" />
+        <el-table-column prop="createTime" label="创建时间" width="200" />
+        <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" type="info" @click="handleDetail(row)">详情</el-button>
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="success" @click="handleStatus(row)" v-if="row.status !== 1">上架</el-button>
-            <el-button size="small" type="warning" @click="handleStatus(row)" v-if="row.status === 1">下架</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-dropdown trigger="click" @command="cmd => handleCommand(cmd, row)">
+              <el-button size="small" link type="primary">
+                操作<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="detail">详情</el-dropdown-item>
+                  <el-dropdown-item command="edit">基础编辑</el-dropdown-item>
+                  <el-dropdown-item command="update">游戏更新</el-dropdown-item>
+                  <el-dropdown-item v-if="row.status !== 1" command="status">上架</el-dropdown-item>
+                  <el-dropdown-item v-else command="status">下架</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
@@ -99,7 +117,7 @@
           <el-tab-pane label="基本信息" name="info">
             <el-descriptions :column="1" border>
               <el-descriptions-item label="游戏名称">{{ detailData.gameName }}</el-descriptions-item>
-              <el-descriptions-item label="中文名">{{ detailData.gameNameZhCN || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="中文名">{{ detailData.gameNameZhCn || '-' }}</el-descriptions-item>
               <el-descriptions-item label="游戏类型">
                 <template v-if="detailData.categoryNames && detailData.categoryNames.length">
                   <el-tag
@@ -116,9 +134,13 @@
                 <el-tag :type="statusTag(detailData.status)">{{ statusText(detailData.status) }}</el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="包大小">{{ detailData.fileSize ? formatSize(detailData.fileSize) : '-' }}</el-descriptions-item>
-              <el-descriptions-item label="图标URL">{{ detailData.icon || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="图标URL">{{ detailData.iconUrl || detailData.icon || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="部署包文件">{{ detailData.pkgFileName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="下载地址">
+                <el-link v-if="detailData.downloadUrl" type="primary" :href="detailData.downloadUrl" target="_blank">{{ detailData.downloadUrl }}</el-link>
+                <span v-else>-</span>
+              </el-descriptions-item>
               <el-descriptions-item label="简介">{{ detailData.description || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="下载地址">{{ detailData.downloadUrl || '-' }}</el-descriptions-item>
             </el-descriptions>
           </el-tab-pane>
           <el-tab-pane label="部署历史" name="history">
@@ -139,18 +161,18 @@
         </el-tabs>
       </template>
 
-      <!-- 编辑 / 新增模式 -->
-      <template v-if="drawerMode === 'edit' || drawerMode === 'create'">
+      <!-- 编辑 / 新增 / 更新模式 -->
+      <template v-if="drawerMode === 'edit' || drawerMode === 'create' || drawerMode === 'update'">
         <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
           <el-form-item label="游戏名称" prop="gameName">
             <el-input
               v-model="form.gameName"
-              :disabled="drawerMode === 'edit'"
+              :disabled="drawerMode !== 'create'"
               placeholder="请输入游戏名称（唯一标识，同时为服务器目录名）"
             />
           </el-form-item>
-          <el-form-item label="中文名" prop="gameNameZhCN">
-            <el-input v-model="form.gameNameZhCN" placeholder="请输入中文名" />
+          <el-form-item label="中文名" prop="gameNameZhCn">
+            <el-input v-model="form.gameNameZhCn" placeholder="请输入中文名" />
           </el-form-item>
           <el-form-item label="游戏类型" prop="categoryIds">
             <el-cascader
@@ -163,19 +185,51 @@
               style="width: 100%"
             />
           </el-form-item>
-          <el-form-item label="版本更新" prop="versionLevel">
+          <el-form-item v-if="drawerMode !== 'edit'" label="版本更新" prop="versionLevel">
             <el-radio-group v-model="form.versionLevel" @change="handleVersionChange">
               <el-radio-button value="major">大版本更新</el-radio-button>
               <el-radio-button value="minor">新增功能</el-radio-button>
               <el-radio-button value="patch">BUG修复</el-radio-button>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="新版本号" prop="version">
+          <el-form-item label="版本号" prop="version">
             <el-input v-model="form.version" placeholder="选择更新维度后自动生成" disabled />
-            <div class="version-tip">新版本号由系统根据当前版本自动生成，不可手动修改</div>
+            <div class="version-tip">{{ drawerMode === 'edit' ? '当前版本号，不可修改' : '新版本号由系统根据当前版本自动生成，不可手动修改' }}</div>
           </el-form-item>
-          <el-form-item label="图标URL" prop="icon">
-            <el-input v-model="form.icon" placeholder="请输入图标URL" />
+          <el-form-item label="游戏图标" prop="icon">
+            <div class="icon-upload-wrap">
+              <el-upload
+                :show-file-list="false"
+                accept="image/*"
+                :before-upload="beforeIconUpload"
+                :http-request="handleIconUpload"
+              >
+                <el-button :loading="iconUploading">上传图标</el-button>
+              </el-upload>
+              <el-image
+                v-if="form.icon"
+                :src="resolveIconUrl(form.icon)"
+                fit="contain"
+                class="icon-preview"
+              />
+              <span v-else class="icon-placeholder">未上传图标</span>
+              <div class="upload-tip">上传后自动保存为文件ID，回显走 /file/view/{id}</div>
+            </div>
+          </el-form-item>
+          <el-form-item v-if="drawerMode !== 'edit'" label="游戏包" prop="packageFileId">
+            <div class="icon-upload-wrap">
+              <el-upload
+                :show-file-list="false"
+                accept=".tar.gz"
+                :before-upload="beforePkgUpload"
+                :http-request="handlePkgUpload"
+              >
+                <el-button :loading="pkgUploading">上传游戏包</el-button>
+              </el-upload>
+              <span class="pkg-name" :class="{ 'has-file': pkgFileName }">
+                {{ pkgFileName ? '已上传：' + pkgFileName : '仅支持 .tar.gz，上传后部署时直接复用该文件' }}
+              </span>
+            </div>
           </el-form-item>
           <el-form-item label="状态" prop="status">
             <el-radio-group v-model="form.status">
@@ -186,9 +240,6 @@
           </el-form-item>
           <el-form-item label="简介" prop="description">
             <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入游戏简介" />
-          </el-form-item>
-          <el-form-item label="下载地址" prop="downloadUrl">
-            <el-input v-model="form.downloadUrl" placeholder="请输入下载地址" />
           </el-form-item>
         </el-form>
         <div class="drawer-footer">
@@ -203,9 +254,11 @@
 <script setup>
 import { reactive, ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getGameList, getNextVersion, createGame, updateGame, deleteGame, updateGameStatus } from '@/api/game'
+import { ArrowDown } from '@element-plus/icons-vue'
+import { getGameList, getGameDetail, getNextVersion, createGame, updateGame, deployGame, deleteGame, updateGameStatus } from '@/api/game'
 import { getDeployHistoryList } from '@/api/deploy'
 import { getCategoryList, getCategoryTree } from '@/api/category'
+import { uploadFile, fileViewUrl } from '@/api/file'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -240,11 +293,12 @@ const pagination = reactive({
 /* ==================== drawer 公共状态 ==================== */
 
 const drawerVisible = ref(false)
-const drawerMode = ref('view') // 'view' | 'edit' | 'create'
+const drawerMode = ref('view') // 'view' | 'edit' | 'create' | 'update'
 
 const drawerTitle = computed(() => {
   if (drawerMode.value === 'view') return '游戏详情'
-  if (drawerMode.value === 'edit') return '编辑游戏'
+  if (drawerMode.value === 'update') return '游戏更新'
+  if (drawerMode.value === 'edit') return '基础信息编辑'
   return '新增游戏'
 })
 
@@ -260,6 +314,14 @@ async function handleDetail(row) {
   detailTab.value = 'info'
   Object.assign(detailData, row)
   drawerVisible.value = true
+
+  // 异步拉取详情覆盖列表字段（列表可能缺失包大小/图标URL/简介/下载地址）
+  try {
+    const res = await getGameDetail(row.id)
+    if (res.data) Object.assign(detailData, res.data)
+  } catch {
+    // 失败保持 row 数据兜底
+  }
 
   // 加载部署历史
   historyLoading.value = true
@@ -279,32 +341,40 @@ const editGameId = ref(null)
 
 const form = ref({
   gameName: '',
-  gameNameZhCN: '',
+  gameNameZhCn: '',
   version: '',
   versionLevel: '',
   categoryIds: [],
   icon: '',
   status: 1,
   description: '',
-  downloadUrl: ''
+  packageFileId: ''
 })
 
-const formRules = {
-  gameName: [{ required: true, message: '请输入游戏名称', trigger: 'blur' }]
-}
+const formRules = computed(() => {
+  const rules = {
+    gameName: [{ required: true, message: '请输入游戏名称', trigger: 'blur' }]
+  }
+  // packageFileId 仅新增/更新模式必填；基础编辑模式去掉该校验，避免 required 拦死编辑提交
+  if (drawerMode.value === 'create' || drawerMode.value === 'update') {
+    rules.packageFileId = [{ required: true, message: '请上传游戏包（.tar.gz）', trigger: 'change' }]
+  }
+  return rules
+})
 
 function resetForm() {
   form.value = {
     gameName: '',
-    gameNameZhCN: '',
+    gameNameZhCn: '',
     version: '',
     versionLevel: '',
     categoryIds: [],
     icon: '',
     status: 1,
     description: '',
-    downloadUrl: ''
+    packageFileId: ''
   }
+  pkgFileName.value = ''
 }
 
 function handleAdd() {
@@ -317,21 +387,142 @@ function handleAdd() {
   drawerVisible.value = true
 }
 
-function handleEdit(row) {
+async function handleEdit(row) {
   drawerMode.value = 'edit'
   editGameId.value = row.id
   form.value = {
     gameName: row.gameName || '',
-    gameNameZhCN: row.gameNameZhCN || '',
+    gameNameZhCn: row.gameNameZhCn || '',
     version: row.version || '',
     versionLevel: '',
     categoryIds: row.categoryIds || [],
     icon: row.icon || '',
     status: row.status ?? 1,
     description: row.description || '',
-    downloadUrl: row.downloadUrl || ''
+    packageFileId: null
   }
   drawerVisible.value = true
+
+  // 异步拉取详情刷新表单（icon/description/categoryIds/version 等用接口返回覆盖，gameName 保持原值）
+  try {
+    const res = await getGameDetail(row.id)
+    const data = res.data || {}
+    form.value.gameNameZhCn = data.gameNameZhCn ?? form.value.gameNameZhCn
+    form.value.version = data.version ?? form.value.version
+    form.value.categoryIds = data.categoryIds ?? form.value.categoryIds
+    form.value.icon = data.icon ?? form.value.icon
+    form.value.status = data.status ?? form.value.status
+    form.value.description = data.description ?? form.value.description
+  } catch {
+    // 失败保持 row 数据兜底
+  }
+}
+
+/**
+ * 游戏更新：复用已上传部署包走部署接口，不重新上传；
+ * 默认选择 major 维度生成新版本号回显，packageFileId 置空等待用户上传新包
+ */
+async function handleUpdate(row) {
+  drawerMode.value = 'update'
+  editGameId.value = row.id
+  form.value = {
+    gameName: row.gameName || '',
+    gameNameZhCn: row.gameNameZhCn || '',
+    version: row.version || '',
+    versionLevel: 'major',
+    categoryIds: row.categoryIds || [],
+    icon: row.icon || '',
+    status: row.status ?? 1,
+    description: row.description || '',
+    packageFileId: null
+  }
+  pkgFileName.value = ''
+  drawerVisible.value = true
+
+  // 异步拉取详情刷新表单，再用后端生成的新版本号覆盖 version
+  try {
+    const res = await getGameDetail(row.id)
+    const data = res.data || {}
+    form.value.gameNameZhCn = data.gameNameZhCn ?? form.value.gameNameZhCn
+    form.value.version = data.version ?? form.value.version
+    form.value.categoryIds = data.categoryIds ?? form.value.categoryIds
+    form.value.icon = data.icon ?? form.value.icon
+    form.value.status = data.status ?? form.value.status
+    form.value.description = data.description ?? form.value.description
+  } catch {
+    // 失败保持 row 数据兜底
+  }
+  await handleVersionChange('major')
+}
+
+/* ==================== 文件上传（图标 / 游戏包） ==================== */
+
+const iconUploading = ref(false)
+const pkgUploading = ref(false)
+const pkgFileName = ref('')
+
+/**
+ * 图标回显地址：icon 为纯数字（file_id）时拼接文件访问接口；否则视为外部 URL 原样使用
+ */
+function resolveIconUrl(icon) {
+  if (!icon) return ''
+  if (/^\d+$/.test(String(icon))) {
+    return fileViewUrl(icon)
+  }
+  return icon
+}
+
+function beforeIconUpload(file) {
+  if (!file.type.startsWith('image/')) {
+    ElMessage.warning('仅支持上传图片格式（jpg/png/webp 等）')
+    return false
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    ElMessage.warning('图标大小不能超过 5MB')
+    return false
+  }
+  return true
+}
+
+async function handleIconUpload(options) {
+  iconUploading.value = true
+  try {
+    const res = await uploadFile(options.file, 'game_icon')
+    form.value.icon = String(res.data.id)
+    ElMessage.success('图标上传成功')
+  } catch {
+    // 错误提示由拦截器统一弹出
+  } finally {
+    iconUploading.value = false
+  }
+}
+
+function beforePkgUpload(file) {
+  const name = file.name || ''
+  if (!name.toLowerCase().endsWith('.tar.gz')) {
+    ElMessage.warning('仅支持 .tar.gz 格式的部署包')
+    return false
+  }
+  if (file.size > 1024 * 1024 * 1024) {
+    ElMessage.warning('游戏包不能超过 1GB')
+    return false
+  }
+  return true
+}
+
+async function handlePkgUpload(options) {
+  pkgUploading.value = true
+  try {
+    const res = await uploadFile(options.file, 'game_pkg', undefined,
+      form.value.gameName, form.value.version)
+    form.value.packageFileId = res.data.id
+    pkgFileName.value = options.file.name || ''
+    ElMessage.success('游戏包上传成功')
+  } catch {
+    // 错误提示由拦截器统一弹出
+  } finally {
+    pkgUploading.value = false
+  }
 }
 
 /**
@@ -353,12 +544,31 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     const payload = { ...form.value }
-    if (drawerMode.value === 'edit') {
-      await updateGame(payload)
-      ElMessage.success('编辑成功')
-    } else {
+    if (drawerMode.value === 'create') {
+      // 新增：携带 packageFileId 自动部署
       await createGame(payload)
       ElMessage.success('新增成功')
+    } else if (drawerMode.value === 'update') {
+      // 更新：需已上传新包，走部署接口复用 fileId，不重新上传
+      if (!payload.packageFileId) {
+        ElMessage.warning('请先上传新的游戏包（.tar.gz）')
+        return
+      }
+      await deployGame({
+        gameName: payload.gameName,
+        gameNameZhCn: payload.gameNameZhCn,
+        icon: payload.icon,
+        description: payload.description,
+        version: payload.version,
+        categoryIds: payload.categoryIds,
+        fileId: payload.packageFileId
+      })
+      ElMessage.success('游戏更新部署成功')
+    } else {
+      // 基础编辑：不重新部署，packageFileId 传 null，避免空字符串绑 Long 报错
+      payload.packageFileId = null
+      await updateGame(payload)
+      ElMessage.success('编辑成功')
     }
     drawerVisible.value = false
     fetchData()
@@ -370,6 +580,17 @@ async function handleSubmit() {
 }
 
 /* ==================== 表格通用逻辑 ==================== */
+
+/**
+ * 操作列下拉菜单命令分发：命令与 handle 函数一一对应，保持原有函数签名（均按 row 传参）
+ */
+function handleCommand(cmd, row) {
+  if (cmd === 'detail') handleDetail(row)
+  else if (cmd === 'edit') handleEdit(row)
+  else if (cmd === 'update') handleUpdate(row)
+  else if (cmd === 'status') handleStatus(row)
+  else if (cmd === 'delete') handleDelete(row)
+}
 
 function statusTag(status) {
   return status === 1 ? 'success' : status === 2 ? 'warning' : 'info'
@@ -492,5 +713,37 @@ onMounted(async () => {
   font-size: 12px;
   color: #909399;
   line-height: 1.5;
+}
+.icon-upload-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.icon-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  border: 1px solid #ebeef5;
+  background: #fafafa;
+}
+.icon-placeholder {
+  font-size: 12px;
+  color: #909399;
+}
+.upload-tip {
+  width: 100%;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
+.pkg-name {
+  font-size: 12px;
+  color: #909399;
+  word-break: break-all;
+}
+.pkg-name.has-file {
+  color: #67c23a;
 }
 </style>

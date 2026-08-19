@@ -25,10 +25,6 @@
             <el-icon><Trophy /></el-icon>
             <span>游戏管理</span>
           </el-menu-item>
-          <el-menu-item index="/deploy">
-            <el-icon><Upload /></el-icon>
-            <span>部署管理</span>
-          </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="system">
           <template #title>
@@ -46,6 +42,10 @@
           <el-menu-item index="/category">
             <el-icon><Menu /></el-icon>
             <span>游戏分类管理</span>
+          </el-menu-item>
+          <el-menu-item index="/file">
+            <el-icon><Files /></el-icon>
+            <span>文件管理</span>
           </el-menu-item>
         </el-sub-menu>
       </el-menu>

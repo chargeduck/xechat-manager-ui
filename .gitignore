@@ -115,3 +115,4 @@ test/
 /.vscode/
 *.gz
 *.tar.gz
+build_*.txt

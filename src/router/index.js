@@ -38,12 +38,6 @@ const routes = [
         meta: { title: '用户管理', requiresAuth: true }
       },
       {
-        path: 'deploy',
-        name: 'Deploy',
-        component: () => import('@/views/Deploy.vue'),
-        meta: { title: '部署管理', requiresAuth: true }
-      },
-      {
         path: 'dict',
         name: 'Dict',
         component: () => import('@/views/Dict.vue'),
@@ -54,6 +48,12 @@ const routes = [
         name: 'Category',
         component: () => import('@/views/Category.vue'),
         meta: { title: '游戏分类管理', requiresAuth: true }
+      },
+      {
+        path: 'file',
+        name: 'File',
+        component: () => import('@/views/File.vue'),
+        meta: { title: '文件管理', requiresAuth: true }
       }
     ]
   }
