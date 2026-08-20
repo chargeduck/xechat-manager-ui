@@ -8,9 +8,10 @@ import request from '@/utils/request'
  * @param {string} [subDir] 可选子目录（如游戏名，按目录归类）
  * @param {string} [gameName] 可选游戏名：bizType=game_pkg 时用于规范化文件名 {gameName}_{version}.tar.gz
  * @param {string} [version] 可选版本号：bizType=game_pkg 时用于规范化文件名 {gameName}_{version}.tar.gz
+ * @param {(percent: number) => void} [onUploadProgress] 可选上传进度回调（0-100）
  * @returns {Promise<{code:number,data:object}>} data 为 SysFile 对象（含 id）
  */
-export function uploadFile(file, bizType, subDir, gameName, version) {
+export function uploadFile(file, bizType, subDir, gameName, version, onUploadProgress) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('bizType', bizType)
@@ -23,10 +24,19 @@ export function uploadFile(file, bizType, subDir, gameName, version) {
   if (version) {
     formData.append('version', version)
   }
+  const config = {}
+  if (typeof onUploadProgress === 'function') {
+    config.onUploadProgress = (e) => {
+      if (e.total > 0) {
+        onUploadProgress(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+  }
   return request({
     url: '/file/upload',
     method: 'post',
-    data: formData
+    data: formData,
+    ...config
   })
 }
 

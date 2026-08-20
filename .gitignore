@@ -115,4 +115,6 @@ test/
 /.vscode/
 *.gz
 *.tar.gz
+*.tar
 build_*.txt
+/manager/

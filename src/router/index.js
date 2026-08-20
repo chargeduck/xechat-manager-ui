@@ -38,6 +38,12 @@ const routes = [
         meta: { title: '游戏大厅', requiresAuth: true }
       },
       {
+        path: 'server',
+        name: 'Server',
+        component: () => import('@/views/Server.vue'),
+        meta: { title: '服务器管理', requiresAuth: true }
+      },
+      {
         path: 'user',
         name: 'User',
         component: () => import('@/views/User.vue'),
@@ -60,13 +66,19 @@ const routes = [
         name: 'File',
         component: () => import('@/views/File.vue'),
         meta: { title: '文件管理', requiresAuth: true }
+      },
+      {
+        path: 'operLog',
+        name: 'OperLog',
+        component: () => import('@/views/OperLog.vue'),
+        meta: { title: '操作日志', requiresAuth: true }
       }
     ]
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/manager/'),
   routes
 })
 

@@ -229,6 +229,13 @@
               <span class="pkg-name" :class="{ 'has-file': pkgFileName }">
                 {{ pkgFileName ? '已上传：' + pkgFileName : '仅支持 .tar.gz，上传后部署时直接复用该文件' }}
               </span>
+              <el-progress
+                v-if="pkgUploading"
+                class="upload-progress"
+                :percentage="pkgUploadProgress"
+                :stroke-width="8"
+                :status="pkgUploadProgress >= 100 ? 'success' : undefined"
+              />
             </div>
           </el-form-item>
           <el-form-item label="状态" prop="status">
@@ -460,6 +467,7 @@ async function handleUpdate(row) {
 const iconUploading = ref(false)
 const pkgUploading = ref(false)
 const pkgFileName = ref('')
+const pkgUploadProgress = ref(0)
 
 /**
  * 图标回显地址：icon 为纯数字（file_id）时拼接文件访问接口；否则视为外部 URL 原样使用
@@ -512,9 +520,12 @@ function beforePkgUpload(file) {
 
 async function handlePkgUpload(options) {
   pkgUploading.value = true
+  pkgUploadProgress.value = 0
   try {
     const res = await uploadFile(options.file, 'game_pkg', undefined,
-      form.value.gameName, form.value.version)
+      form.value.gameName, form.value.version, (percent) => {
+        pkgUploadProgress.value = percent
+      })
     form.value.packageFileId = res.data.id
     pkgFileName.value = options.file.name || ''
     ElMessage.success('游戏包上传成功')
@@ -522,6 +533,7 @@ async function handlePkgUpload(options) {
     // 错误提示由拦截器统一弹出
   } finally {
     pkgUploading.value = false
+    pkgUploadProgress.value = 0
   }
 }
 
@@ -745,5 +757,9 @@ onMounted(async () => {
 }
 .pkg-name.has-file {
   color: #67c23a;
+}
+.upload-progress {
+  width: 100%;
+  margin-top: 4px;
 }
 </style>

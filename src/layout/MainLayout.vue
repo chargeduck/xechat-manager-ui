@@ -31,6 +31,10 @@
           </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="system">
+          <el-menu-item index="/server">
+            <el-icon><Connection /></el-icon>
+            <span>服务器管理</span>
+          </el-menu-item>
           <template #title>
             <el-icon><Setting /></el-icon>
             <span>系统管理</span>
@@ -50,6 +54,10 @@
           <el-menu-item index="/file">
             <el-icon><Files /></el-icon>
             <span>文件管理</span>
+          </el-menu-item>
+          <el-menu-item index="/operLog">
+            <el-icon><Document /></el-icon>
+            <span>操作日志</span>
           </el-menu-item>
         </el-sub-menu>
       </el-menu>
