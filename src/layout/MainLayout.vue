@@ -6,60 +6,16 @@
       </div>
       <el-menu
         :default-active="activeMenu"
-        :default-openeds="['game', 'system']"
+        :default-openeds="openedMenus"
         router
         background-color="#304156"
         text-color="#bfcbd9"
         active-text-color="#409eff"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><DataAnalysis /></el-icon>
-          <span>首页仪表盘</span>
-        </el-menu-item>
-        <el-sub-menu index="game">
-          <template #title>
-            <el-icon><Monitor /></el-icon>
-            <span>游戏管理</span>
-          </template>
-          <el-menu-item index="/game">
-            <el-icon><Trophy /></el-icon>
-            <span>游戏管理</span>
-          </el-menu-item>
-          <el-menu-item index="/gameHall">
-            <el-icon><VideoPlay /></el-icon>
-            <span>游戏大厅</span>
-          </el-menu-item>
-        </el-sub-menu>
-        <el-sub-menu index="system">
-          <el-menu-item index="/server">
-            <el-icon><Connection /></el-icon>
-            <span>服务器管理</span>
-          </el-menu-item>
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item index="/user">
-            <el-icon><User /></el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/dict">
-            <el-icon><Collection /></el-icon>
-            <span>字典管理</span>
-          </el-menu-item>
-          <el-menu-item index="/category">
-            <el-icon><Menu /></el-icon>
-            <span>游戏分类管理</span>
-          </el-menu-item>
-          <el-menu-item index="/file">
-            <el-icon><Files /></el-icon>
-            <span>文件管理</span>
-          </el-menu-item>
-          <el-menu-item index="/operLog">
-            <el-icon><Document /></el-icon>
-            <span>操作日志</span>
-          </el-menu-item>
-        </el-sub-menu>
+        <template v-if="menus.length">
+          <MenuTree :menus="menus" />
+        </template>
+        <div v-else class="no-permission">无权限</div>
       </el-menu>
     </el-aside>
 
@@ -94,7 +50,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, h, defineComponent, resolveComponent, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import { useUserStore } from '@/stores/user'
@@ -109,12 +65,61 @@ const userStore = useUserStore()
 
 const activeMenu = computed(() => route.path)
 
+/** 当前用户可见菜单树（来自 userInfo.menus） */
+const menus = computed(() => userStore.userInfo?.menus || [])
+
+/** 默认展开顶级目录 */
+const openedMenus = computed(() =>
+  menus.value.filter(m => m.children && m.children.length).map(m => String(m.id))
+)
+
+/** 递归渲染菜单树：目录(el-sub-menu) / 菜单(el-menu-item)，图标按 icon 名动态解析（main.js 已全局注册 ElementPlusIconsVue） */
+const MenuTree = defineComponent({
+  name: 'MenuTree',
+  props: {
+    menus: { type: Array, default: () => [] }
+  },
+  setup(props) {
+    const ElSubMenu = resolveComponent('el-sub-menu')
+    const ElMenuItem = resolveComponent('el-menu-item')
+    const ElIcon = resolveComponent('el-icon')
+
+    const renderMenu = (items) => items.map((menu) => {
+      const children = (menu.children || []).filter(c => c && c.path)
+      const icon = menu.icon ? h(resolveComponent(menu.icon)) : null
+      if (children.length) {
+        return h(
+          ElSubMenu,
+          { index: String(menu.id) },
+          {
+            title: () => [icon ? h(ElIcon, [icon]) : null, h('span', menu.menuName)],
+            default: () => renderMenu(children)
+          }
+        )
+      }
+      return h(
+        ElMenuItem,
+        { index: menu.path },
+        { default: () => [icon ? h(ElIcon, [icon]) : null, h('span', menu.menuName)] }
+      )
+    })
+
+    return () => renderMenu(props.menus)
+  }
+})
+
 function handleCommand(command) {
   if (command === 'logout') {
     userStore.logout()
     router.push('/login')
   }
 }
+
+onMounted(() => {
+  if (!userStore.userInfo) {
+    userStore.fetchUserInfo().catch(() => {})
+  }
+})
 </script>
 
 <style scoped>
@@ -169,5 +174,11 @@ function handleCommand(command) {
   background: var(--el-bg-color-page);
   padding: 20px;
   overflow-y: auto;
+}
+.no-permission {
+  color: #bfcbd9;
+  font-size: 14px;
+  text-align: center;
+  padding: 24px 0;
 }
 </style>

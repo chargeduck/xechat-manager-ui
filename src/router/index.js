@@ -72,6 +72,18 @@ const routes = [
         name: 'OperLog',
         component: () => import('@/views/OperLog.vue'),
         meta: { title: '操作日志', requiresAuth: true }
+      },
+      {
+        path: 'role',
+        name: 'Role',
+        component: () => import('@/views/Role.vue'),
+        meta: { title: '角色管理', requiresAuth: true }
+      },
+      {
+        path: 'menu',
+        name: 'Menu',
+        component: () => import('@/views/Menu.vue'),
+        meta: { title: '菜单管理', requiresAuth: true }
       }
     ]
   }

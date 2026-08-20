@@ -36,9 +36,20 @@
         <el-table-column prop="nickname" label="昵称" min-width="120" />
         <el-table-column prop="email" label="邮箱" min-width="160" />
         <el-table-column prop="phone" label="手机号" width="120" />
-        <el-table-column prop="role" label="角色" width="80">
+        <el-table-column label="角色" min-width="160">
           <template #default="{ row }">
-            <el-tag :type="row.role === 'admin' ? 'danger' : 'info'">{{ row.role }}</el-tag>
+            <template v-if="roleMap[row.id] && roleMap[row.id].length">
+              <el-tag
+                v-for="r in roleMap[row.id]"
+                :key="r.id"
+                :type="roleTagType(r.roleCode)"
+                size="small"
+                class="role-tag"
+              >
+                {{ r.roleName }}
+              </el-tag>
+            </template>
+            <span v-else class="no-role">-</span>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="80">
@@ -88,10 +99,14 @@
         <el-form-item label="手机号">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
         </el-form-item>
-        <el-form-item label="角色" prop="role">
-          <el-select v-model="form.role" filterable>
-            <el-option label="普通用户" value="user" />
-            <el-option label="管理员" value="admin" />
+        <el-form-item v-if="isEdit" label="分配角色">
+          <el-select v-model="form.roleIds" multiple filterable placeholder="请选择角色" style="width: 100%">
+            <el-option
+              v-for="r in roleOptions"
+              :key="r.id"
+              :label="`${r.roleName}（${r.roleCode}）`"
+              :value="r.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
@@ -112,7 +127,8 @@
 <script setup>
 import { reactive, ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserList, createUser, updateUser, deleteUser, updateUserStatus } from '@/api/user'
+import { getUserList, createUser, updateUser, deleteUser, updateUserStatus, getUserRoles, assignUserRoles } from '@/api/user'
+import { listAllRoles } from '@/api/role'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -121,6 +137,11 @@ const submitLoading = ref(false)
 const formRef = ref(null)
 const isEdit = ref(false)
 const editId = ref(null)
+
+/* userId -> 角色列表（含 id/roleCode/roleName），用于表格角色列标签 */
+const roleMap = reactive({})
+/* 分配角色下拉数据（GET /role/list） */
+const roleOptions = ref([])
 
 const searchForm = reactive({
   username: '',
@@ -141,6 +162,7 @@ const form = reactive({
   email: '',
   phone: '',
   role: 'user',
+  roleIds: [],
   status: 1
 })
 
@@ -151,6 +173,34 @@ const formRules = {
 }
 
 const dialogTitle = computed(() => isEdit.value ? '编辑用户' : '新增用户')
+
+function roleTagType(code) {
+  if (code === 'super_admin') return 'danger'
+  if (code === 'admin') return 'warning'
+  if (code === 'developer') return 'primary'
+  return 'info'
+}
+
+/** 批量加载当前页用户的角色列表（GET /user/roles/{userId}） */
+async function fetchRolesForRows(rows) {
+  const ids = rows.map(r => r.id).filter(Boolean)
+  if (!ids.length) return
+  await Promise.all(ids.map(async (id) => {
+    try {
+      const res = await getUserRoles(id)
+      roleMap[id] = res.data || []
+    } catch { /* 单行失败不影响整体 */ }
+  }))
+}
+
+/** 加载角色下拉（GET /role/list） */
+async function loadRoleOptions() {
+  if (roleOptions.value.length) return
+  try {
+    const res = await listAllRoles()
+    roleOptions.value = res.data || []
+  } catch { /* 忽略 */ }
+}
 
 async function fetchData() {
   loading.value = true
@@ -163,8 +213,10 @@ async function fetchData() {
     if (searchForm.nickname) params.nickname = searchForm.nickname
     if (searchForm.status !== '') params.status = searchForm.status
     const res = await getUserList(params)
-    tableData.value = res.data.records || res.data.list || []
+    const records = res.data.records || res.data.list || []
+    tableData.value = records
     pagination.total = res.data.total || 0
+    await fetchRolesForRows(records)
   } finally {
     loading.value = false
   }
@@ -187,12 +239,12 @@ function handleAdd() {
   isEdit.value = false
   editId.value = null
   Object.assign(form, {
-    username: '', password: '', nickname: '', email: '', phone: '', role: 'user', status: 1
+    username: '', password: '', nickname: '', email: '', phone: '', role: 'user', roleIds: [], status: 1
   })
   dialogVisible.value = true
 }
 
-function handleEdit(row) {
+async function handleEdit(row) {
   isEdit.value = true
   editId.value = row.id
   Object.assign(form, {
@@ -202,9 +254,15 @@ function handleEdit(row) {
     email: row.email || '',
     phone: row.phone || '',
     role: row.role || 'user',
+    roleIds: [],
     status: row.status ?? 1
   })
   dialogVisible.value = true
+  await loadRoleOptions()
+  try {
+    const res = await getUserRoles(row.id)
+    form.roleIds = (res.data || []).map(r => r.id)
+  } catch { /* 忽略 */ }
 }
 
 async function handleSubmit() {
@@ -215,6 +273,9 @@ async function handleSubmit() {
     if (isEdit.value) {
       const data = { nickname: form.nickname, email: form.email, phone: form.phone, role: form.role, status: form.status }
       await updateUser(editId.value, data)
+      if (form.roleIds && form.roleIds.length) {
+        await assignUserRoles(editId.value, { roleIds: form.roleIds })
+      }
       ElMessage.success('编辑成功')
     } else {
       await createUser({ ...form })
@@ -273,5 +334,11 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+.role-tag {
+  margin-right: 4px;
+}
+.no-role {
+  color: #909399;
 }
 </style>

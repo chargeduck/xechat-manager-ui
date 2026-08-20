@@ -65,3 +65,24 @@ export function updateUserStatus(id, status) {
     data: { status }
   })
 }
+
+/**
+ * 按用户查询角色列表 (GET /user/roles/{userId})
+ */
+export function getUserRoles(userId) {
+  return request({
+    url: `/user/roles/${userId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 给用户分配角色（全量覆盖） (POST /user/roles)
+ */
+export function assignUserRoles(data) {
+  return request({
+    url: '/user/roles',
+    method: 'post',
+    data
+  })
+}
