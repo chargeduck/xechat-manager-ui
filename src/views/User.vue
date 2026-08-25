@@ -59,9 +59,10 @@
         </el-table-column>
         <el-table-column prop="lastLoginTime" label="最近登录" width="170" />
         <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="primary" plain @click="handleResetPassword(row)">重置密码</el-button>
             <el-button v-if="row.status === 1" size="small" type="warning" @click="handleToggleStatus(row)">禁用</el-button>
             <el-button v-else size="small" type="success" @click="handleToggleStatus(row)">启用</el-button>
             <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
@@ -127,7 +128,7 @@
 <script setup>
 import { reactive, ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserList, createUser, updateUser, deleteUser, updateUserStatus, getUserRoles, assignUserRoles } from '@/api/user'
+import { getUserList, createUser, updateUser, deleteUser, updateUserStatus, getUserRoles, assignUserRoles, resetUserPassword } from '@/api/user'
 import { listAllRoles } from '@/api/role'
 
 const loading = ref(false)
@@ -271,11 +272,9 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     if (isEdit.value) {
-      const data = { nickname: form.nickname, email: form.email, phone: form.phone, role: form.role, status: form.status }
+      const data = { nickname: form.nickname, email: form.email, phone: form.phone, status: form.status }
       await updateUser(editId.value, data)
-      if (form.roleIds && form.roleIds.length) {
-        await assignUserRoles(editId.value, { roleIds: form.roleIds })
-      }
+      await assignUserRoles({ userId: editId.value, roleIds: form.roleIds })
       ElMessage.success('编辑成功')
     } else {
       await createUser({ ...form })
@@ -306,6 +305,31 @@ async function handleDelete(row) {
     ElMessage.success('删除成功')
     fetchData()
   } catch { /* 取消 */ }
+}
+
+/** 管理员强制重置密码（newPassword 为空时后端自动生成随机密码并返回） */
+async function handleResetPassword(row) {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      `为用户「${row.username}」设置新密码（留空则由系统自动生成随机密码）：`,
+      '重置密码',
+      {
+        confirmButtonText: '确定重置',
+        cancelButtonText: '取消',
+        inputType: 'password',
+        inputPlaceholder: '留空自动生成'
+      }
+    )
+    const res = await resetUserPassword(row.id, { newPassword: value || '' })
+    const newPwd = res.data
+    if (newPwd) {
+      await ElMessageBox.alert(`用户「${row.username}」的新密码为：${newPwd}`, '重置成功', { confirmButtonText: '我已保存' })
+    } else {
+      ElMessage.success('密码已重置')
+    }
+  } catch (e) {
+    if (e !== 'cancel' && e?.message) ElMessage.error(e.message)
+  }
 }
 
 onMounted(() => {

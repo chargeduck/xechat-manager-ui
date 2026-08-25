@@ -35,6 +35,7 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item command="changePassword">修改密码</el-dropdown-item>
                 <el-dropdown-item command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -47,13 +48,33 @@
       </el-main>
     </el-container>
   </el-container>
+  <!-- 修改密码对话框 -->
+  <el-dialog v-model="pwdDialogVisible" title="修改密码" width="440px" destroy-on-close>
+    <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="100px">
+      <el-form-item label="原密码" prop="oldPassword">
+        <el-input v-model="pwdForm.oldPassword" type="password" placeholder="请输入原密码" show-password />
+      </el-form-item>
+      <el-form-item label="新密码" prop="newPassword">
+        <el-input v-model="pwdForm.newPassword" type="password" placeholder="请输入新密码" show-password />
+      </el-form-item>
+      <el-form-item label="确认新密码" prop="confirmPassword">
+        <el-input v-model="pwdForm.confirmPassword" type="password" placeholder="请再次输入新密码" show-password />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="pwdDialogVisible = false">取消</el-button>
+      <el-button type="primary" :loading="pwdLoading" @click="handleChangePassword">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
-import { computed, h, defineComponent, resolveComponent, onMounted } from 'vue'
+import { computed, h, defineComponent, resolveComponent, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import { useUserStore } from '@/stores/user'
+import { ElMessage } from 'element-plus'
+import { changePassword } from '@/api/user'
 
 const route = useRoute()
 const isDark = useDark()
@@ -62,6 +83,47 @@ const toggleDark = () => {
 }
 const router = useRouter()
 const userStore = useUserStore()
+
+const pwdDialogVisible = ref(false)
+const pwdLoading = ref(false)
+const pwdFormRef = ref(null)
+const pwdForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
+
+const validatePwdConfirm = (rule, value, callback) => {
+  if (value !== pwdForm.newPassword) {
+    callback(new Error('两次输入的新密码不一致'))
+  } else {
+    callback()
+  }
+}
+
+const pwdRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不少于 6 位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    { validator: validatePwdConfirm, trigger: 'blur' }
+  ]
+}
+
+async function handleChangePassword() {
+  const valid = await pwdFormRef.value.validate().catch(() => false)
+  if (!valid) return
+  pwdLoading.value = true
+  try {
+    await changePassword({ oldPassword: pwdForm.oldPassword, newPassword: pwdForm.newPassword })
+    ElMessage.success('密码修改成功')
+    pwdDialogVisible.value = false
+    pwdForm.oldPassword = ''
+    pwdForm.newPassword = ''
+    pwdForm.confirmPassword = ''
+  } finally {
+    pwdLoading.value = false
+  }
+}
 
 const activeMenu = computed(() => route.path)
 
@@ -112,6 +174,11 @@ function handleCommand(command) {
   if (command === 'logout') {
     userStore.logout()
     router.push('/login')
+  } else if (command === 'changePassword') {
+    pwdForm.oldPassword = ''
+    pwdForm.newPassword = ''
+    pwdForm.confirmPassword = ''
+    pwdDialogVisible.value = true
   }
 }
 

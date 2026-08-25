@@ -14,7 +14,11 @@
         </el-form-item>
       </el-form>
       <div class="login-footer">
-        还没有账号？<router-link to="/register">立即注册</router-link>
+        <div class="login-links">
+          <router-link to="/forgot-password">忘记密码</router-link>
+          <span class="divider">|</span>
+          <router-link to="/register">立即注册</router-link>
+        </div>
       </div>
     </el-card>
   </div>
@@ -82,5 +86,13 @@ async function handleLogin() {
 .login-footer a {
   color: #409eff;
   text-decoration: none;
+}
+.login-links {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.login-links .divider {
+  color: #dcdfe6;
 }
 </style>

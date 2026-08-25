@@ -39,7 +39,7 @@ export function createUser(data) {
  */
 export function updateUser(id, data) {
   return request({
-    url: `/sys/user/${id}`,
+    url: `/user/${id}`,
     method: 'put',
     data
   })
@@ -50,7 +50,7 @@ export function updateUser(id, data) {
  */
 export function deleteUser(id) {
   return request({
-    url: `/sys/user/${id}`,
+    url: `/user/${id}`,
     method: 'delete'
   })
 }
@@ -60,9 +60,42 @@ export function deleteUser(id) {
  */
 export function updateUserStatus(id, status) {
   return request({
-    url: `/sys/user/${id}/status`,
+    url: `/user/${id}/status`,
     method: 'put',
     data: { status }
+  })
+}
+
+/**
+ * 修改密码（当前登录用户） (POST /user/changePassword)
+ */
+export function changePassword(data) {
+  return request({
+    url: '/user/changePassword',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 忘记密码（校验用户名+邮箱） (POST /user/forgotPassword)
+ */
+export function forgotPassword(data) {
+  return request({
+    url: '/user/forgotPassword',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 管理员强制重置密码（newPassword 为空自动生成） (POST /user/resetPassword/{userId})
+ */
+export function resetUserPassword(userId, data) {
+  return request({
+    url: `/user/resetPassword/${userId}`,
+    method: 'post',
+    data
   })
 }
 

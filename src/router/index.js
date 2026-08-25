@@ -15,6 +15,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPassword.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
     redirect: '/dashboard',
@@ -101,7 +107,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth !== false && !token) {
     ElMessage.warning('请先登录')
     next('/login')
-  } else if ((to.path === '/login' || to.path === '/register') && token) {
+  } else if ((to.path === '/login' || to.path === '/register' || to.path === '/forgot-password') && token) {
     next('/dashboard')
   } else {
     next()
