@@ -50,6 +50,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="version" label="当前版本" width="100" />
+        <el-table-column label="后端" width="80">
+          <template #default="{ row }">
+            <el-tag v-if="row.needBackend" type="warning" size="small">需要</el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="游戏类型" min-width="140">
           <template #default="{ row }">
             <template v-if="row.categoryNames && row.categoryNames.length">
@@ -87,6 +93,7 @@
                   <el-dropdown-item command="detail">详情</el-dropdown-item>
                   <el-dropdown-item command="edit">基础编辑</el-dropdown-item>
                   <el-dropdown-item command="update">游戏更新</el-dropdown-item>
+                  <el-dropdown-item command="backend">上传后端jar</el-dropdown-item>
                   <el-dropdown-item v-if="row.status !== 1" command="status">上架</el-dropdown-item>
                   <el-dropdown-item v-else command="status">下架</el-dropdown-item>
                   <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
@@ -255,6 +262,60 @@
         </div>
       </template>
     </el-drawer>
+
+    <!-- el-dialog：上传后端 jar / 后端信息 -->
+    <el-dialog v-model="backendVisible" title="后端 jar 托管" width="560px" destroy-on-close>
+      <el-descriptions v-if="backendInfo" :column="1" border size="small" class="backend-info">
+        <el-descriptions-item label="游戏名称">{{ backendInfo.gameName }}</el-descriptions-item>
+        <el-descriptions-item label="jar 文件">{{ backendInfo.fileName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="版本号">{{ backendInfo.version || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="文件大小">{{ backendInfo.fileSize ? formatSize(backendInfo.fileSize) : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="SHA-256">
+          <span class="sha256-text">{{ backendInfo.sha256 || '-' }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="部署时间">{{ backendInfo.deployTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="上传者ID">{{ backendInfo.uploadUserId || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <el-empty v-else :image-size="60" description="尚未上传后端 jar" />
+
+      <el-divider>上传新版本</el-divider>
+      <el-form :model="backendForm" label-width="90px">
+        <el-form-item label="游戏名称">
+          <el-input :model-value="backendForm.gameName" disabled />
+        </el-form-item>
+        <el-form-item label="中文名">
+          <el-input v-model="backendForm.gameNameZhCn" placeholder="游戏中文名（游戏不存在时自动登记）" />
+        </el-form-item>
+        <el-form-item label="版本号">
+          <el-input v-model="backendForm.version" placeholder="如 1.0.0（留空默认 1.0.0）" />
+        </el-form-item>
+        <el-form-item label="后端 jar">
+          <el-upload
+            :show-file-list="false"
+            accept=".jar"
+            :before-upload="beforeBackendJarUpload"
+            :http-request="handleBackendJarUpload"
+          >
+            <el-button :loading="backendUploading">选择 jar 文件</el-button>
+          </el-upload>
+          <div class="upload-tip">仅支持 .jar，上限 200MB；上传成功后将触发 launcher reload</div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="backendVisible = false">关闭</el-button>
+        <el-popconfirm
+          v-if="backendInfo"
+          title="确定下架当前后端 jar？"
+          confirm-button-text="下架"
+          cancel-button-text="取消"
+          @confirm="handleBackendRemove"
+        >
+          <template #reference>
+            <el-button type="danger" plain :loading="backendRemoving">下架后端</el-button>
+          </template>
+        </el-popconfirm>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -600,6 +661,7 @@ function handleCommand(cmd, row) {
   if (cmd === 'detail') handleDetail(row)
   else if (cmd === 'edit') handleEdit(row)
   else if (cmd === 'update') handleUpdate(row)
+  else if (cmd === 'backend') handleBackend(row)
   else if (cmd === 'status') handleStatus(row)
   else if (cmd === 'delete') handleDelete(row)
 }
@@ -659,6 +721,77 @@ async function handleStatus(row) {
     ElMessage.success(`${text}成功`)
     fetchData()
   } catch { /* 取消 */ }
+}
+
+/* ==================== 后端 jar 托管 ==================== */
+
+const backendVisible = ref(false)
+const backendUploading = ref(false)
+const backendRemoving = ref(false)
+const backendInfo = ref(null)
+const backendForm = ref({ gameName: '', gameNameZhCn: '', version: '' })
+
+async function handleBackend(row) {
+  backendForm.value = {
+    gameName: row.gameName || '',
+    gameNameZhCn: row.gameNameZhCn || '',
+    version: row.version || ''
+  }
+  backendInfo.value = null
+  backendVisible.value = true
+  // 拉取已部署信息
+  try {
+    const res = await getGameBackendInfo(row.gameName)
+    backendInfo.value = res.data || null
+  } catch {
+    backendInfo.value = null
+  }
+}
+
+function beforeBackendJarUpload(file) {
+  const name = file.name || ''
+  if (!name.toLowerCase().endsWith('.jar')) {
+    ElMessage.warning('仅支持 .jar 格式')
+    return false
+  }
+  if (file.size > 200 * 1024 * 1024) {
+    ElMessage.warning('jar 文件不能超过 200MB')
+    return false
+  }
+  return true
+}
+
+async function handleBackendJarUpload(options) {
+  backendUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('gameName', backendForm.value.gameName)
+    formData.append('gameNameZhCn', backendForm.value.gameNameZhCn)
+    formData.append('version', backendForm.value.version)
+    formData.append('jar', options.file)
+    const res = await deployGameBackend(formData)
+    backendInfo.value = res.data || null
+    ElMessage.success('后端 jar 上传成功')
+    fetchData()
+  } catch {
+    // 错误提示由拦截器统一弹出
+  } finally {
+    backendUploading.value = false
+  }
+}
+
+async function handleBackendRemove() {
+  backendRemoving.value = true
+  try {
+    await removeGameBackend(backendForm.value.gameName)
+    backendInfo.value = null
+    ElMessage.success('后端已下架')
+    fetchData()
+  } catch {
+    // 错误提示由拦截器统一弹出
+  } finally {
+    backendRemoving.value = false
+  }
 }
 
 async function handleDelete(row) {
@@ -761,5 +894,13 @@ onMounted(async () => {
 .upload-progress {
   width: 100%;
   margin-top: 4px;
+}
+.sha256-text {
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+.backend-info {
+  margin-bottom: 8px;
 }
 </style>

@@ -86,3 +86,37 @@ export function updateGameStatus(gameName, status) {
     data: { gameName, status }
   })
 }
+
+/**
+ * 上传游戏后端 jar（multipart：gameName/gameNameZhCn/version/jar）
+ */
+export function deployGameBackend(data) {
+  return request({
+    url: '/gameBackend/deploy',
+    method: 'post',
+    data,
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+/**
+ * 下架/删除游戏后端 jar（body：gameName）
+ */
+export function removeGameBackend(gameName) {
+  return request({
+    url: '/gameBackend/remove',
+    method: 'post',
+    data: { gameName }
+  })
+}
+
+/**
+ * 查询游戏后端部署信息（query：gameName）
+ */
+export function getGameBackendInfo(gameName) {
+  return request({
+    url: '/gameBackend/info',
+    method: 'get',
+    params: { gameName }
+  })
+}

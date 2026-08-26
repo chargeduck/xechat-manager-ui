@@ -20,6 +20,15 @@ service.interceptors.request.use(
   }
 )
 
+// 跳转登录页（避免已在登录页时重复跳转）
+function redirectToLogin(msg) {
+  localStorage.removeItem('token')
+  ElMessage.error(msg)
+  if (!window.location.pathname.endsWith('/login')) {
+    window.location.href = '/login'
+  }
+}
+
 // 响应拦截器
 service.interceptors.response.use(
   response => {
@@ -33,17 +42,23 @@ service.interceptors.response.use(
     return res
   },
   error => {
+    // userinfo 请求失败（401/5xx/网络错误/超时）一律视为登录态失效，跳登录页
+    const isUserInfoRequest = error.config?.url?.includes('/user/userInfo')
     if (error.response) {
       const { status } = error.response
       if (status === 401) {
-        localStorage.removeItem('token')
-        ElMessage.error('登录已过期，请重新登录')
-        window.location.href = '/login'
+        redirectToLogin('登录已过期，请重新登录')
+      } else if (isUserInfoRequest) {
+        redirectToLogin('获取用户信息失败，请重新登录')
       } else {
         ElMessage.error(error.response.data?.message || error.response.data?.msg || '网络错误')
       }
     } else {
-      ElMessage.error('网络连接异常')
+      if (isUserInfoRequest) {
+        redirectToLogin('获取用户信息失败，请重新登录')
+      } else {
+        ElMessage.error('网络连接异常')
+      }
     }
     return Promise.reject(error)
   }
