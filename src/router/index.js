@@ -80,6 +80,18 @@ const routes = [
         meta: { title: '操作日志', requiresAuth: true }
       },
       {
+        path: 'ipBanRule',
+        name: 'IpBanRule',
+        component: () => import('@/views/IpBanRule.vue'),
+        meta: { title: 'IP限流规则', requiresAuth: true }
+      },
+      {
+        path: 'ipBlacklist',
+        name: 'IpBlacklist',
+        component: () => import('@/views/IpBlacklist.vue'),
+        meta: { title: 'IP黑名单', requiresAuth: true }
+      },
+      {
         path: 'role',
         name: 'Role',
         component: () => import('@/views/Role.vue'),
