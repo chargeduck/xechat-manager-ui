@@ -28,79 +28,79 @@ const routes = [
       {
         path: 'dashboard',
         name: 'Dashboard',
-        component: () => import('@/views/Dashboard.vue'),
+        component: () => import('@/views/dashboard/Dashboard.vue'),
         meta: { title: '首页仪表盘', requiresAuth: true }
       },
       {
         path: 'game',
         name: 'Game',
-        component: () => import('@/views/Game.vue'),
+        component: () => import('@/views/gameManage/Game.vue'),
         meta: { title: '游戏管理', requiresAuth: true }
       },
       {
         path: 'gameHall',
         name: 'GameHall',
-        component: () => import('@/views/GameHall.vue'),
+        component: () => import('@/views/gameManage/GameHall.vue'),
         meta: { title: '游戏大厅', requiresAuth: true }
       },
       {
         path: 'server',
         name: 'Server',
-        component: () => import('@/views/Server.vue'),
+        component: () => import('@/views/system/Server.vue'),
         meta: { title: '服务器管理', requiresAuth: true }
       },
       {
         path: 'user',
         name: 'User',
-        component: () => import('@/views/User.vue'),
+        component: () => import('@/views/system/User.vue'),
         meta: { title: '用户管理', requiresAuth: true }
       },
       {
         path: 'dict',
         name: 'Dict',
-        component: () => import('@/views/Dict.vue'),
+        component: () => import('@/views/system/Dict.vue'),
         meta: { title: '字典管理', requiresAuth: true }
       },
       {
         path: 'category',
         name: 'Category',
-        component: () => import('@/views/Category.vue'),
+        component: () => import('@/views/gameManage/Category.vue'),
         meta: { title: '游戏分类管理', requiresAuth: true }
       },
       {
         path: 'file',
         name: 'File',
-        component: () => import('@/views/File.vue'),
+        component: () => import('@/views/system/File.vue'),
         meta: { title: '文件管理', requiresAuth: true }
       },
       {
         path: 'operLog',
         name: 'OperLog',
-        component: () => import('@/views/OperLog.vue'),
+        component: () => import('@/views/system/OperLog.vue'),
         meta: { title: '操作日志', requiresAuth: true }
       },
       {
         path: 'ipBanRule',
         name: 'IpBanRule',
-        component: () => import('@/views/IpBanRule.vue'),
+        component: () => import('@/views/system/IpBanRule.vue'),
         meta: { title: 'IP限流规则', requiresAuth: true }
       },
       {
         path: 'ipBlacklist',
         name: 'IpBlacklist',
-        component: () => import('@/views/IpBlacklist.vue'),
+        component: () => import('@/views/system/IpBlacklist.vue'),
         meta: { title: 'IP黑名单', requiresAuth: true }
       },
       {
         path: 'role',
         name: 'Role',
-        component: () => import('@/views/Role.vue'),
+        component: () => import('@/views/system/Role.vue'),
         meta: { title: '角色管理', requiresAuth: true }
       },
       {
         path: 'menu',
         name: 'Menu',
-        component: () => import('@/views/Menu.vue'),
+        component: () => import('@/views/system/Menu.vue'),
         meta: { title: '菜单管理', requiresAuth: true }
       }
     ]

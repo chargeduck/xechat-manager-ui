@@ -128,7 +128,7 @@
 <script setup>
 import { reactive, ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserList, createUser, updateUser, deleteUser, updateUserStatus, getUserRoles, assignUserRoles, resetUserPassword } from '@/api/user'
+import { getUserList, createUser, updateUser, deleteUser, updateUserStatus, assignUserRoles, resetUserPassword } from '@/api/user'
 import { listAllRoles } from '@/api/role'
 
 const loading = ref(false)
@@ -182,18 +182,6 @@ function roleTagType(code) {
   return 'info'
 }
 
-/** 批量加载当前页用户的角色列表（GET /user/roles/{userId}） */
-async function fetchRolesForRows(rows) {
-  const ids = rows.map(r => r.id).filter(Boolean)
-  if (!ids.length) return
-  await Promise.all(ids.map(async (id) => {
-    try {
-      const res = await getUserRoles(id)
-      roleMap[id] = res.data || []
-    } catch { /* 单行失败不影响整体 */ }
-  }))
-}
-
 /** 加载角色下拉（GET /role/list） */
 async function loadRoleOptions() {
   if (roleOptions.value.length) return
@@ -217,7 +205,8 @@ async function fetchData() {
     const records = res.data.records || res.data.list || []
     tableData.value = records
     pagination.total = res.data.total || 0
-    await fetchRolesForRows(records)
+    // 后端 /user/list 已直接返回每行 roles，无需再逐行补查
+    records.forEach(r => { roleMap[r.id] = r.roles || [] })
   } finally {
     loading.value = false
   }
@@ -260,10 +249,8 @@ async function handleEdit(row) {
   })
   dialogVisible.value = true
   await loadRoleOptions()
-  try {
-    const res = await getUserRoles(row.id)
-    form.roleIds = (res.data || []).map(r => r.id)
-  } catch { /* 忽略 */ }
+  // 列表行已携带 roles，直接回填编辑弹窗
+  form.roleIds = (row.roles || []).map(r => r.id)
 }
 
 async function handleSubmit() {
