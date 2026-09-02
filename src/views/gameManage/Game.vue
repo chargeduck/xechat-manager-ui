@@ -49,11 +49,22 @@
             <el-link v-if="row.playUrl" type="primary" :href="row.playUrl" target="_blank">{{ row.gameNameZhCn }}</el-link>
           </template>
         </el-table-column>
+        <el-table-column prop="repoUrl" lable="仓库地址" >
+          <template #default="{row}">
+            <el-link v-if="row.repoUrl" type="primary" :href="row.repoUrl" target="_blank">仓库地址</el-link>
+          </template>
+        </el-table-column>
         <el-table-column prop="version" label="当前版本" width="100" />
         <el-table-column label="后端" width="80">
           <template #default="{ row }">
             <el-tag v-if="row.needBackend" type="warning" size="small">需要</el-tag>
             <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="支持联机" width="90">
+          <template #default="{ row }">
+            <el-tag v-if="row.needMatch" type="success" size="small">是</el-tag>
+            <span v-else type="warning">否</span>
           </template>
         </el-table-column>
         <el-table-column label="游戏类型" min-width="140">
@@ -93,7 +104,7 @@
                   <el-dropdown-item command="detail">详情</el-dropdown-item>
                   <el-dropdown-item command="edit">基础编辑</el-dropdown-item>
                   <el-dropdown-item command="update">游戏更新</el-dropdown-item>
-                  <el-dropdown-item command="backend">上传后端jar</el-dropdown-item>
+                  <el-dropdown-item v-if="row.needBackend" command="backend">上传后端jar</el-dropdown-item>
                   <el-dropdown-item v-if="row.status !== 1" command="status">上架</el-dropdown-item>
                   <el-dropdown-item v-else command="status">下架</el-dropdown-item>
                   <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
@@ -140,11 +151,18 @@
               <el-descriptions-item label="状态">
                 <el-tag :type="statusTag(detailData.status)">{{ statusText(detailData.status) }}</el-tag>
               </el-descriptions-item>
+              <el-descriptions-item label="部署选项">
+                <el-tag v-if="detailData.needBackend" type="warning" size="small">需要后端</el-tag>
+                <span v-else>纯前端（无后端）</span>
+                <el-divider direction="vertical" />
+                <el-tag v-if="detailData.needMatch" type="success" size="small">需要匹配能力</el-tag>
+                <span v-else>不注入匹配/大厅SDK</span>
+              </el-descriptions-item>
               <el-descriptions-item label="包大小">{{ detailData.fileSize ? formatSize(detailData.fileSize) : '-' }}</el-descriptions-item>
               <el-descriptions-item label="图标URL">{{ detailData.iconUrl || detailData.icon || '-' }}</el-descriptions-item>
               <el-descriptions-item label="部署包文件">{{ detailData.pkgFileName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="下载地址">
-                <el-link v-if="detailData.downloadUrl" type="primary" :href="detailData.downloadUrl" target="_blank">{{ detailData.downloadUrl }}</el-link>
+              <el-descriptions-item label="仓库地址">
+                <el-link v-if="detailData.repoUrl" type="primary" :href="detailData.repoUrl" target="_blank">{{ detailData.repoUrl }}</el-link>
                 <span v-else>-</span>
               </el-descriptions-item>
               <el-descriptions-item label="简介">{{ detailData.description || '-' }}</el-descriptions-item>
@@ -245,6 +263,17 @@
               />
             </div>
           </el-form-item>
+          <el-form-item label="部署选项">
+            <div class="deploy-options">
+              <el-switch v-model="form.needBackend" active-text="需要后端" />
+              <el-switch v-model="form.needMatch" active-text="需要匹配能力" />
+            </div>
+            <div class="upload-tip">
+              需要后端：托管后端 jar 的游戏保持开启，纯前端游戏请关闭；
+              需要匹配能力：部署前端包时自动注入匹配/大厅 SDK，纯单机/自研房间游戏请关闭（改动仅对新部署生效）
+              后端开发指南：https://gitee.com/xechat/xechat-game-server
+            </div>
+          </el-form-item>
           <el-form-item label="状态" prop="status">
             <el-radio-group v-model="form.status">
               <el-radio :value="0">下架</el-radio>
@@ -254,6 +283,9 @@
           </el-form-item>
           <el-form-item label="简介" prop="description">
             <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入游戏简介" />
+          </el-form-item>
+          <el-form-item label="仓库地址" prop="repoUrl">
+            <el-input v-model="form.repoUrl" type="textarea" :rows="3" placeholder="请输入仓库地址" />
           </el-form-item>
         </el-form>
         <div class="drawer-footer">
@@ -416,7 +448,8 @@ const form = ref({
   icon: '',
   status: 1,
   description: '',
-  packageFileId: ''
+  packageFileId: '',
+  repoUrl: ''
 })
 
 const formRules = computed(() => {
@@ -440,7 +473,9 @@ function resetForm() {
     icon: '',
     status: 1,
     description: '',
-    packageFileId: ''
+    packageFileId: '',
+    needBackend: true,
+    needMatch: true
   }
   pkgFileName.value = ''
 }
@@ -467,7 +502,9 @@ async function handleEdit(row) {
     icon: row.icon || '',
     status: row.status ?? 1,
     description: row.description || '',
-    packageFileId: null
+    packageFileId: null,
+    needBackend: row.needBackend ?? true,
+    needMatch: row.needMatch ?? true
   }
   drawerVisible.value = true
 
@@ -481,6 +518,8 @@ async function handleEdit(row) {
     form.value.icon = data.icon ?? form.value.icon
     form.value.status = data.status ?? form.value.status
     form.value.description = data.description ?? form.value.description
+    form.value.needBackend = data.needBackend ?? form.value.needBackend
+    form.value.needMatch = data.needMatch ?? form.value.needMatch
   } catch {
     // 失败保持 row 数据兜底
   }
@@ -502,7 +541,9 @@ async function handleUpdate(row) {
     icon: row.icon || '',
     status: row.status ?? 1,
     description: row.description || '',
-    packageFileId: null
+    packageFileId: null,
+    needBackend: row.needBackend ?? true,
+    needMatch: row.needMatch ?? true
   }
   pkgFileName.value = ''
   drawerVisible.value = true
@@ -517,6 +558,8 @@ async function handleUpdate(row) {
     form.value.icon = data.icon ?? form.value.icon
     form.value.status = data.status ?? form.value.status
     form.value.description = data.description ?? form.value.description
+    form.value.needBackend = data.needBackend ?? form.value.needBackend
+    form.value.needMatch = data.needMatch ?? form.value.needMatch
   } catch {
     // 失败保持 row 数据兜底
   }
@@ -634,7 +677,9 @@ async function handleSubmit() {
         description: payload.description,
         version: payload.version,
         categoryIds: payload.categoryIds,
-        fileId: payload.packageFileId
+        fileId: payload.packageFileId,
+        needBackend: payload.needBackend,
+        needMatch: payload.needMatch
       })
       ElMessage.success('游戏更新部署成功')
     } else {
@@ -858,6 +903,12 @@ onMounted(async () => {
   font-size: 12px;
   color: #909399;
   line-height: 1.5;
+}
+.deploy-options {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
 }
 .icon-upload-wrap {
   display: flex;

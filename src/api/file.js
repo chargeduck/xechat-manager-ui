@@ -71,3 +71,16 @@ export function getFilePage(data) {
     data: { ...rest, page: { current: page, size: pageSize } }
   })
 }
+
+/**
+ * 删除文件（后端 DELETE /file/{fileId}，需登录）。
+ * 物理删除：同时删除数据库记录与磁盘落盘文件；被游戏/后端/部署历史引用的文件会返回失败。
+ * @param {string|number} fileId
+ * @returns {Promise<object>}
+ */
+export function deleteFile(fileId) {
+  return request({
+    url: `/file/${fileId}`,
+    method: 'delete'
+  })
+}

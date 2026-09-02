@@ -62,12 +62,20 @@
         </el-table-column>
         <el-table-column prop="md5Str" label="MD5" min-width="180" show-overflow-tooltip />
         <el-table-column prop="createTime" label="上传时间" width="170" />
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="isImage(row)" link type="primary" size="small" @click="handlePreview(row)">预览</el-button>
-            <a :href="fileDownloadUrl(row.id)" class="download-link">
-              <el-button link type="primary" size="small">下载</el-button>
-            </a>
+            <el-dropdown trigger="click" @command="(cmd) => handleCommand(cmd, row)">
+              <el-button link type="primary" size="small">
+                操作<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item v-if="isImage(row)" command="preview">预览</el-dropdown-item>
+                  <el-dropdown-item command="download">下载</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
@@ -88,7 +96,9 @@
 
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
-import { getFilePage, fileViewUrl, fileDownloadUrl } from '@/api/file'
+import { ArrowDown } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getFilePage, fileViewUrl, fileDownloadUrl, deleteFile } from '@/api/file'
 
 const list = ref([])
 const listLoading = ref(false)
@@ -175,6 +185,40 @@ function handlePreview(row) {
   document.body.appendChild(img)
 }
 
+function handleCommand(cmd, row) {
+  if (cmd === 'preview') {
+    handlePreview(row)
+  } else if (cmd === 'download') {
+    const a = document.createElement('a')
+    a.href = fileDownloadUrl(row.id)
+    a.download = row.fileName || ''
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  } else if (cmd === 'delete') {
+    handleDelete(row)
+  }
+}
+
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除文件「${row.fileName}」吗？将同时删除数据库记录与磁盘文件，且不可恢复。`,
+      '警告',
+      { type: 'error', confirmButtonText: '确定', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await deleteFile(row.id)
+    ElMessage.success('删除成功')
+    fetchList()
+  } catch (e) {
+    // 请求拦截器已统一提示（如被业务引用等失败原因）
+  }
+}
+
 onMounted(fetchList)
 </script>
 
@@ -210,8 +254,5 @@ onMounted(fetchList)
 .file-type-badge {
   font-size: 12px;
   color: #909399;
-}
-.download-link {
-  text-decoration: none;
 }
 </style>
